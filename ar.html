@@ -3,374 +3,722 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Visor AR Realista - IA Timeline | VIOS ACADEMY</title>
+    <title>Visor AR · IA Timeline | VIOS ACADEMY</title>
     <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
-    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
-        a-scene { display: block; width: 100vw; height: 100vh; }
-        a-scene canvas { background: transparent !important; }
-        
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        html, body {
+            width:100%; height:100%;
+            background:#000;
+            font-family:'Segoe UI', system-ui, sans-serif;
+            overflow:hidden;
+        }
+
+        /* ── VIDEO DE CÁMARA: capa base ── */
+        #cam-video {
+            position:fixed; top:0; left:0;
+            width:100%; height:100%;
+            object-fit:cover;
+            z-index:0;
+            display:none;
+            transform: scaleX(-1); /* espejo natural en cámara frontal, se corrige en trasera */
+        }
+
+        /* ── ESCENA A-FRAME: sobre el video, fondo transparente ── */
+        #arScene {
+            position:fixed; top:0; left:0;
+            width:100vw; height:100vh;
+            z-index:1;
+            display:none;
+        }
+        /* Fondo transparente en el canvas WebGL */
+        #arScene canvas { background:transparent !important; }
+
+        /* ── UI: siempre por encima ── */
         #top-bar {
-            position: fixed; top: 0; left: 0; right: 0;
-            background: linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 100%);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(0,255,255,0.3);
-            padding: 11px 52px 9px 16px;
-            z-index: 9999;
+            position:fixed; top:0; left:0; right:0;
+            background:linear-gradient(180deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.4) 100%);
+            backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+            border-bottom:1px solid rgba(0,255,255,0.3);
+            padding:11px 56px 9px 16px;
+            z-index:9999;
         }
-        #era-label { font-weight: 700; font-size: 0.78rem; color: #fff; }
-        #era-label span { display: block; font-size: 0.58rem; font-weight: 400; color: rgba(255,255,255,0.6); margin-top: 3px; }
-        
+        #era-label { font-weight:700; font-size:0.78rem; color:#fff; letter-spacing:0.4px; }
+        #era-label span { display:block; font-size:0.58rem; font-weight:400; color:rgba(255,255,255,0.6); margin-top:3px; }
+
         .vios-tag {
-            position: fixed; top: 12px; right: 12px;
-            background: linear-gradient(135deg, #FF6B00, #FF8C00);
-            color: #fff; font-weight: 800; font-size: 0.62rem;
-            padding: 5px 11px; border-radius: 8px;
-            font-family: monospace;
-            box-shadow: 0 0 10px rgba(255,107,0,0.5);
-            z-index: 9999;
+            position:fixed; top:12px; right:12px;
+            background:linear-gradient(135deg,#FF6B00,#FF8C00);
+            color:#fff; font-weight:800; font-size:0.62rem;
+            padding:5px 11px; border-radius:8px;
+            letter-spacing:1px; font-family:monospace;
+            box-shadow:0 0 10px rgba(255,107,0,0.5);
+            z-index:9999;
         }
-        
+
+        /* ── OVERLAY INICIO ── */
         #overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.97);
-            z-index: 8000;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 28px; text-align: center;
-            transition: opacity 0.5s ease;
+            position:fixed; inset:0;
+            background:rgba(0,0,0,0.97);
+            z-index:8000;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            padding:28px; text-align:center;
+            transition:opacity 0.5s ease;
         }
-        #overlay.fade-out { opacity: 0; pointer-events: none; }
-        
-        .ov-icon { font-size: 3.8rem; margin-bottom: 14px; }
-        .ov-title { font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
-        
+        #overlay.fade-out { opacity:0; pointer-events:none; }
+
+        .ov-icon { font-size:3.6rem; margin-bottom:12px; }
+        .ov-title { font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:8px; }
+
         .era-chip {
-            display: inline-block; padding: 7px 22px; border-radius: 50px;
-            font-weight: 700; font-size: 0.82rem; border: 2px solid;
-            margin-bottom: 22px;
+            display:inline-block; padding:7px 22px; border-radius:50px;
+            font-weight:700; font-size:0.82rem; border:2px solid;
+            margin-bottom:20px;
         }
-        .chip-past { border-color: #D2B48C; color: #D2B48C; background: rgba(210,180,140,0.1); }
-        .chip-present { border-color: #00CCFF; color: #00CCFF; background: rgba(0,204,255,0.08); }
-        .chip-future { border-color: #CC00FF; color: #CC00FF; background: rgba(204,0,255,0.08); }
-        
-        .ov-sub { font-size: 0.77rem; color: rgba(255,255,255,0.6); line-height: 1.65; max-width: 330px; margin-bottom: 28px; }
-        
+        .chip-past    { border-color:#D2B48C; color:#D2B48C; background:rgba(210,180,140,0.1); }
+        .chip-present { border-color:#00CCFF; color:#00CCFF; background:rgba(0,204,255,0.08); }
+        .chip-future  { border-color:#CC00FF; color:#CC00FF; background:rgba(204,0,255,0.08); }
+
+        .ov-sub {
+            font-size:0.77rem; color:rgba(255,255,255,0.6);
+            line-height:1.65; max-width:330px; margin-bottom:26px;
+        }
+
+        /* Previsualización del modelo */
+        .model-preview {
+            width:180px; height:180px;
+            border:1px solid rgba(255,255,255,0.12);
+            border-radius:16px;
+            margin-bottom:22px;
+            overflow:hidden;
+            background:rgba(255,255,255,0.04);
+        }
+        .model-preview canvas { width:100%!important; height:100%!important; }
+
         #btn-start {
-            background: linear-gradient(135deg, #00c3ff, #0055ff);
-            color: #fff; border: none; padding: 14px 38px;
-            border-radius: 50px; font-size: 0.88rem; font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 0 22px rgba(0,140,255,0.5);
-            transition: transform 0.12s;
+            background:linear-gradient(135deg,#00c3ff,#0055ff);
+            color:#fff; border:none; padding:14px 38px;
+            border-radius:50px; font-size:0.88rem; font-weight:700;
+            cursor:pointer; letter-spacing:0.5px;
+            box-shadow:0 0 22px rgba(0,140,255,0.5);
+            transition:transform 0.12s;
         }
-        #btn-start:active { transform: scale(0.96); }
-        #btn-start:disabled { opacity: 0.6; cursor: default; }
-        
-        .ov-note { margin-top: 14px; font-size: 0.6rem; color: rgba(255,255,255,0.35); max-width: 300px; line-height: 1.5; }
-        
+        #btn-start:active { transform:scale(0.96); }
+        #btn-start:disabled { opacity:0.6; cursor:default; }
+
+        .ov-note { margin-top:14px; font-size:0.6rem; color:rgba(255,255,255,0.3); max-width:300px; line-height:1.5; }
+
+        /* ── ERROR PERMISOS ── */
         #perm-error {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-            z-index: 9000; display: none; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 28px; text-align: center;
+            position:fixed; inset:0; background:rgba(0,0,0,0.95);
+            z-index:9000; display:none; flex-direction:column;
+            align-items:center; justify-content:center;
+            padding:28px; text-align:center;
         }
-        #perm-error.visible { display: flex; }
-        #perm-error h2 { color: #ff5555; font-size: 1.05rem; margin-bottom: 12px; }
-        #perm-error p { color: rgba(255,255,255,0.65); font-size: 0.78rem; line-height: 1.65; max-width: 340px; margin-bottom: 24px; }
-        #perm-error a { color: #0ff; border: 1.5px solid #0ff; background: rgba(0,255,255,0.08); padding: 11px 26px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 0.78rem; }
-        
+        #perm-error.visible { display:flex; }
+        #perm-error h2 { color:#ff5555; font-size:1.05rem; margin-bottom:12px; }
+        #perm-error p { color:rgba(255,255,255,0.65); font-size:0.78rem; line-height:1.65; max-width:340px; margin-bottom:24px; }
+        #perm-error a {
+            color:#0ff; border:1.5px solid #0ff; background:rgba(0,255,255,0.08);
+            padding:11px 26px; border-radius:50px; text-decoration:none;
+            font-weight:700; font-size:0.78rem;
+        }
+
         #back-btn {
-            position: fixed; bottom: 22px; left: 18px;
-            background: rgba(0,0,0,0.82); backdrop-filter: blur(10px);
-            border: 1.5px solid rgba(0,255,255,0.65); color: #0ff;
-            padding: 11px 22px; border-radius: 50px; font-size: 0.76rem;
-            font-weight: 700; text-decoration: none; z-index: 9999;
-            display: flex; align-items: center; gap: 7px;
+            position:fixed; bottom:22px; left:18px;
+            background:rgba(0,0,0,0.82); backdrop-filter:blur(10px);
+            border:1.5px solid rgba(0,255,255,0.65); color:#0ff;
+            padding:11px 22px; border-radius:50px; font-size:0.76rem;
+            font-weight:700; text-decoration:none; z-index:9999;
+            display:flex; align-items:center; gap:7px;
+            transition:background 0.15s, color 0.15s;
         }
-        #back-btn:active { background: #0ff; color: #000; }
-        
+        #back-btn:active { background:#0ff; color:#000; }
+
         #cam-status {
-            position: fixed; bottom: 22px; right: 18px;
-            background: rgba(0,0,0,0.68); border-radius: 50px;
-            padding: 7px 13px; font-size: 0.58rem; color: rgba(255,255,255,0.55);
-            z-index: 9999; display: flex; align-items: center; gap: 6px;
+            position:fixed; bottom:22px; right:18px;
+            background:rgba(0,0,0,0.65); border-radius:50px;
+            padding:7px 13px; font-size:0.58rem; color:rgba(255,255,255,0.55);
+            z-index:9999; display:flex; align-items:center; gap:6px;
         }
-        .dot { width: 7px; height: 7px; border-radius: 50%; background: #555; flex-shrink: 0; }
-        .dot.on { background: #00ff88; box-shadow: 0 0 5px #00ff88; }
-        
-        .loading-models {
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.85); color: #0ff; padding: 8px 16px;
-            border-radius: 20px; font-size: 0.7rem; z-index: 9999;
-            font-family: monospace; display: none;
+        .dot { width:7px; height:7px; border-radius:50%; background:#555; flex-shrink:0; transition:background 0.3s; }
+        .dot.on { background:#00ff88; box-shadow:0 0 5px #00ff88; }
+
+        #https-warn {
+            position:fixed; bottom:70px; left:50%; transform:translateX(-50%);
+            background:rgba(255,170,0,0.93); color:#000; padding:8px 18px;
+            border-radius:22px; font-size:0.65rem; font-weight:700;
+            z-index:9999; text-align:center; max-width:320px;
+            opacity:1; transition:opacity 1s; display:none;
+        }
+
+        /* Hint táctil AR activo */
+        #ar-hint {
+            position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+            color:rgba(255,255,255,0.35); font-size:0.7rem;
+            pointer-events:none; z-index:2; display:none;
+            text-align:center; line-height:1.8;
+        }
+        #ar-hint.show { display:block; }
+
+        @media (max-width:480px) {
+            .ov-title { font-size:0.96rem; }
+            #btn-start { padding:12px 30px; font-size:0.82rem; }
         }
     </style>
 </head>
 <body>
 
+<!-- Aviso HTTPS -->
+<div id="https-warn">⚠️ La cámara requiere HTTPS o localhost</div>
+
+<!-- ══════════════════════════════════════
+     OVERLAY DE INICIO
+═══════════════════════════════════════ -->
 <div id="overlay">
-    <div class="ov-icon" id="ov-icon">🧠</div>
+    <div class="ov-icon"  id="ov-icon">🧠</div>
     <div class="ov-title" id="ov-title">Realidad Aumentada · IA</div>
     <div class="era-chip" id="ov-chip">⚡ PRESENTE IA</div>
-    <div class="ov-sub">
-        📷 Se activará tu cámara y aparecerá un modelo 3D realista.<br><br>
-        <strong style="color:#fff">No necesitas marcadores.</strong><br>
-        Mueve el dispositivo para verlo desde todos los ángulos.
+    <div class="ov-sub" id="ov-desc">
+        Se activará tu cámara. El modelo 3D aparecerá sobre la imagen en vivo.<br><br>
+        <strong style="color:#fff">Mueve el dispositivo</strong> para explorar el objeto desde distintos ángulos.
     </div>
-    <button id="btn-start">🎮 Activar AR</button>
-    <p class="ov-note">⚠️ Usa HTTPS o localhost para que la cámara funcione correctamente</p>
+    <button id="btn-start">📷 Activar cámara AR</button>
+    <p class="ov-note">El acceso a la cámara es local. Ningún dato sale del dispositivo.</p>
 </div>
 
+<!-- ══════════════════════════════════════
+     ERROR PERMISOS
+═══════════════════════════════════════ -->
 <div id="perm-error">
     <h2>❌ Sin acceso a la cámara</h2>
-    <p>Para usar Realidad Aumentada:<br><br>
-    ① Usa Chrome, Firefox o Safari actualizado<br>
-    ② HTTPS requerido (o localhost)<br>
-    ③ Permite el acceso cuando el navegador lo pida</p>
-    <a href="index.html">← Volver</a>
+    <p>
+        ① Usa Chrome, Firefox o Safari actualizado<br>
+        ② La página debe estar en <strong style="color:#0ff">HTTPS</strong> o <strong style="color:#0ff">localhost</strong><br>
+        ③ Pulsa "Permitir" cuando el navegador lo solicite
+    </p>
+    <a href="index.html">← Volver a la línea del tiempo</a>
 </div>
 
+<!-- UI persistente -->
 <div id="top-bar">
-    <div id="era-label">🧠 REALIDAD AUMENTADA <span id="era-sub">Iniciando…</span></div>
+    <div id="era-label">🧠 REALIDAD AUMENTADA<span id="era-sub">Iniciando…</span></div>
 </div>
 <div class="vios-tag">VIOS ACADEMY</div>
 <a href="index.html" id="back-btn">← Volver</a>
 <div id="cam-status"><div class="dot" id="cam-dot"></div><span id="cam-txt">Cámara inactiva</span></div>
-<div class="loading-models" id="loadingMsg">📦 Cargando modelos 3D...</div>
 
-<a-scene id="arScene" style="display:none;" embedded vr-mode-ui="enabled: false" renderer="antialias:true; logarithmicDepthBuffer:true; colorManagement: true; alpha: true;" background="color: transparent;">
-    <a-camera position="0 1.6 0" look-controls="enabled:true" wasd-controls="enabled:false"></a-camera>
-    
-    <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
-    <a-light type="directional" position="2 4 3" color="#ffffff" intensity="0.65"></a-light>
-    <a-light type="point" position="0 2 0" color="#88ccff" intensity="0.4" distance="8"></a-light>
-    <a-light type="point" position="-1 1 1" color="#ffaa88" intensity="0.3"></a-light>
+<!-- Hint rotación -->
+<div id="ar-hint">↕ Mueve el dispositivo para explorar<br>el modelo en 360°</div>
 
-    <!-- =============================================== -->
-    <!-- PASADO: Computadora Vintage Retro + Telefono -->
-    <!-- =============================================== -->
-    <a-entity id="obj-pasado" visible="false" position="0 0 -2" scale="0.45 0.45 0.45">
-        <a-cylinder position="0 -0.3 0" radius="1.5" height="0.08" color="#2a2a2a" metalness="0.7" roughness="0.4"></a-cylinder>
-        
-        <!-- Computadora retro -->
-        <a-box position="-0.7 -0.1 0.2" width="1.0" height="0.7" depth="0.55" color="#C8A96E" metalness="0.5" roughness="0.6"></a-box>
-        <!-- Pantalla CRT -->
-        <a-box position="-0.7 0.12 0.48" width="0.82" height="0.52" depth="0.06" color="#001800"></a-box>
-        <a-box position="-0.7 0.12 0.52" width="0.72" height="0.06" depth="0.02" color="#00FF66" opacity="0.8">
-            <a-animation attribute="opacity" dur="800" direction="alternate" repeat="indefinite" from="0.8" to="0.2"></a-animation>
-        </a-box>
-        <a-box position="-0.7 0.0 0.52" width="0.72" height="0.04" depth="0.02" color="#00FF44" opacity="0.5">
-            <a-animation attribute="opacity" dur="1200" direction="alternate" repeat="indefinite" from="0.5" to="0.1"></a-animation>
-        </a-box>
-        
-        <!-- Teclado vintage -->
-        <a-box position="-0.7 -0.25 0.65" width="0.95" height="0.05" depth="0.32" color="#444"></a-box>
-        
-        <!-- Figura humana simplificada (persona) -->
-        <a-cylinder position="0.8 -0.05 0.3" radius="0.22" height="0.55" color="#DEB887"></a-cylinder>
-        <a-sphere position="0.8 0.35 0.3" radius="0.2" color="#E8C9A0"></a-sphere>
-        <a-sphere position="0.73 0.4 0.38" radius="0.05" color="#111"></a-sphere>
-        <a-sphere position="0.87 0.4 0.38" radius="0.05" color="#111"></a-sphere>
-        
-        <!-- Texto flotante -->
-        <a-text value="PASADO DE LA IA" position="0 1.0 0" align="center" width="5" color="#D2B48C" scale="0.9 0.9 0.9"></a-text>
-        <a-text value="1950-2011 | Turing · ELIZA · Deep Blue" position="0 -0.55 0" align="center" width="6" scale="0.55 0.55 0.55" color="#aaa"></a-text>
-        
-        <a-animation attribute="position" dur="4000" direction="alternate" repeat="indefinite" from="0 0 -2" to="0 0.15 -2"></a-animation>
-        <a-animation attribute="rotation" dur="30000" repeat="indefinite" to="0 360 0"></a-animation>
-    </a-entity>
+<!-- Video cámara (fondo real) -->
+<video id="cam-video" autoplay playsinline muted></video>
 
-    <!-- =============================================== -->
-    <!-- PRESENTE: Red Neuronal / Estructura Atómica IA -->
-    <!-- =============================================== -->
-    <a-entity id="obj-presente" visible="false" position="0 0 -2" scale="0.5 0.5 0.5">
-        <a-cylinder position="0 -0.25 0" radius="1.3" height="0.06" color="#0a0a1a" metalness="0.9"></a-cylinder>
-        
-        <!-- Núcleo central -->
-        <a-sphere position="0 0.3 0" radius="0.45" color="#FF6600" emissive="#FF3300" emissive-intensity="0.5">
-            <a-animation attribute="scale" dur="2000" direction="alternate" repeat="indefinite" from="1 1 1" to="1.08 1.08 1.08"></a-animation>
-        </a-sphere>
-        
-        <!-- Anillos orbitales -->
-        <a-torus radius="0.95" radius-tubular="0.03" color="#00CCFF" rotation="90 0 0">
-            <a-animation attribute="rotation" dur="6000" repeat="indefinite" to="360 0 0"></a-animation>
-        </a-torus>
-        <a-torus radius="1.25" radius-tubular="0.025" color="#FF44FF" rotation="60 45 0">
-            <a-animation attribute="rotation" dur="8000" repeat="indefinite" to="60 405 0"></a-animation>
-        </a-torus>
-        <a-torus radius="1.55" radius-tubular="0.022" color="#00FFAA" rotation="30 90 0">
-            <a-animation attribute="rotation" dur="10000" repeat="indefinite" to="30 450 0"></a-animation>
-        </a-torus>
-        
-        <!-- Neuronas flotantes (esferas) -->
-        <a-sphere position="0.95 0.25 0" radius="0.13" color="#0ff" emissive="#0ff" emissive-intensity="0.4">
-            <a-animation attribute="position" dur="2500" direction="alternate" repeat="indefinite" from="0.95 0.25 0" to="0.95 0.55 0"></a-animation>
-        </a-sphere>
-        <a-sphere position="-0.9 0.45 0.45" radius="0.12" color="#ff0" emissive="#ff0" emissive-intensity="0.35">
-            <a-animation attribute="position" dur="3000" direction="alternate" repeat="indefinite" from="-0.9 0.45 0.45" to="-0.9 0.75 0.45"></a-animation>
-        </a-sphere>
-        <a-sphere position="0.55 -0.15 1.15" radius="0.11" color="#f0f" emissive="#f0f" emissive-intensity="0.35">
-            <a-animation attribute="position" dur="2800" direction="alternate" repeat="indefinite" from="0.55 -0.15 1.15" to="0.55 0.15 1.15"></a-animation>
-        </a-sphere>
-        <a-sphere position="-0.65 -0.1 -1.05" radius="0.12" color="#0f0" emissive="#0f0" emissive-intensity="0.35">
-            <a-animation attribute="position" dur="3200" direction="alternate" repeat="indefinite" from="-0.65 -0.1 -1.05" to="-0.65 0.2 -1.05"></a-animation>
-        </a-sphere>
-        <a-sphere position="0.35 1.05 -0.55" radius="0.1" color="#ff6600" emissive="#ff6600" emissive-intensity="0.35">
-            <a-animation attribute="position" dur="2600" direction="alternate" repeat="indefinite" from="0.35 1.05 -0.55" to="0.35 1.35 -0.55"></a-animation>
-        </a-sphere>
-        
-        <!-- Texto informativo -->
-        <a-text value="PRESENTE DE LA IA" position="0 1.65 0" align="center" width="5.5" color="#FFAA44" scale="0.9 0.9 0.9"></a-text>
-        <a-text value="2012-2025 | Deep Learning · Transformers · ChatGPT" position="0 -0.65 0" align="center" width="7" scale="0.55 0.55 0.55" color="#FFD966"></a-text>
-        
-        <a-animation attribute="position" dur="4500" direction="alternate" repeat="indefinite" from="0 0 -2" to="0 0.18 -2"></a-animation>
-        <a-animation attribute="rotation" dur="25000" repeat="indefinite" to="0 360 0"></a-animation>
-    </a-entity>
+<!-- ══════════════════════════════════════
+     ESCENA A-FRAME
+═══════════════════════════════════════ -->
+<a-scene
+    id="arScene"
+    embedded
+    vr-mode-ui="enabled:false"
+    renderer="antialias:true; logarithmicDepthBuffer:true; alpha:true; colorManagement:true;"
+    loading-screen="enabled:false"
+>
+    <!-- Cámara con look-controls (giroscopio + arrastrar) -->
+    <a-camera id="main-cam" position="0 1.6 0"
+        look-controls="enabled:true; touchEnabled:true; magicWindowTrackingEnabled:true;"
+        wasd-controls="enabled:false">
+    </a-camera>
 
-    <!-- =============================================== -->
-    <!-- FUTURO: Robot Humanoide Realista (modelo GLB)   -->
-    <!-- =============================================== -->
-    <a-entity id="obj-futuro" visible="false" position="0 0 -2" scale="0.6 0.6 0.6">
-        <a-cylinder position="0 -0.25 0" radius="1.4" height="0.08" color="#0a0a2a" metalness="0.95"></a-cylinder>
-        
-        <!-- Robot Humanoide -->
-        <a-cylinder position="0 -0.05 0" radius="0.38" height="0.55" color="#C0C0E0" metalness="0.85"></a-cylinder>
-        <a-box position="0 0.45 0" width="0.75" height="0.6" depth="0.45" color="#A0A0D0" metalness="0.9"></a-box>
-        
-        <!-- Cabeza robot -->
-        <a-sphere position="0 1.0 0" radius="0.35" color="#D0D0F0" metalness="0.85"></a-sphere>
-        <!-- Ojos LED -->
-        <a-sphere position="-0.13 1.08 0.35" radius="0.08" color="#00FFFF" emissive="#00FFFF" emissive-intensity="0.7">
-            <a-animation attribute="emissive-intensity" dur="1000" direction="alternate" repeat="indefinite" from="0.7" to="0.2"></a-animation>
-        </a-sphere>
-        <a-sphere position="0.13 1.08 0.35" radius="0.08" color="#00FFFF" emissive="#00FFFF" emissive-intensity="0.7">
-            <a-animation attribute="emissive-intensity" dur="1000" direction="alternate" repeat="indefinite" from="0.7" to="0.2"></a-animation>
-        </a-sphere>
-        
-        <!-- Antena -->
-        <a-cylinder position="0 1.38 0" radius="0.02" height="0.35" color="#FF00FF" emissive="#FF00FF" emissive-intensity="0.4"></a-cylinder>
-        <a-sphere position="0 1.56 0" radius="0.06" color="#FF00FF" emissive="#FF00FF" emissive-intensity="0.8">
-            <a-animation attribute="scale" dur="1500" direction="alternate" repeat="indefinite" from="1 1 1" to="1.3 1.3 1.3"></a-animation>
-        </a-sphere>
-        
-        <!-- Brazos -->
-        <a-cylinder position="-0.55 0.55 0" radius="0.07" height="0.6" color="#B0B0D0" metalness="0.8" rotation="0 0 20"></a-cylinder>
-        <a-cylinder position="0.55 0.55 0" radius="0.07" height="0.6" color="#B0B0D0" metalness="0.8" rotation="0 0 -20"></a-cylinder>
-        
-        <!-- Singularidad/Energía sobre el robot -->
-        <a-sphere position="0 1.95 0" radius="0.55" color="#9C27B0" wireframe="true" emissive="#6600AA" emissive-intensity="0.5">
-            <a-animation attribute="rotation" dur="8000" repeat="indefinite" to="360 360 0"></a-animation>
-            <a-animation attribute="scale" dur="2500" direction="alternate" repeat="indefinite" from="1 1 1" to="1.12 1.12 1.12"></a-animation>
-        </a-sphere>
-        <a-sphere position="0 1.95 0" radius="0.35" color="#E040FB" metalness="0.8" emissive="#AA00CC" emissive-intensity="0.5">
-            <a-animation attribute="rotation" dur="5000" repeat="indefinite" to="0 -360 360"></a-animation>
-        </a-sphere>
-        <a-sphere position="0 1.95 0" radius="0.2" color="#FFFFFF" emissive="#FFFFFF" emissive-intensity="1.0">
-            <a-animation attribute="scale" dur="1800" direction="alternate" repeat="indefinite" from="1 1 1" to="1.25 1.25 1.25"></a-animation>
-        </a-sphere>
-        
-        <!-- Texto -->
-        <a-text value="FUTURO DE LA IA" position="0 2.7 0" align="center" width="5.5" color="#E040FB" scale="0.9 0.9 0.9"></a-text>
-        <a-text value="2026-2050+ | AGI · ASI · Singularidad" position="0 -0.65 0" align="center" width="6.5" scale="0.55 0.55 0.55" color="#CE93D8"></a-text>
-        
-        <a-animation attribute="position" dur="3500" direction="alternate" repeat="indefinite" from="0 0 -2" to="0 0.2 -2"></a-animation>
+    <!-- Luces globales -->
+    <a-light type="ambient"     color="#ffffff" intensity="0.8"></a-light>
+    <a-light type="directional" position="3 5 4"  color="#ffffff" intensity="0.6"></a-light>
+    <a-light type="point"       position="0 3 0"  color="#aaddff" intensity="0.5" distance="8"></a-light>
+    <a-light type="point"       position="-2 1 2" color="#ffaa55" intensity="0.3" distance="6"></a-light>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ■ PASADO (1950–2011)
+           ESCENA: Test de Turing
+           – Alan Turing (persona A) a la izquierda
+           – Evaluador (persona B) a la derecha
+           – Pantalla/terminal en el centro separándolos
+           – Cables y preguntas flotando
+         ═══════════════════════════════════════════════════════════════ -->
+    <a-entity id="obj-pasado" visible="false" position="0 0.2 -2.5">
+        <a-entity scale="0.42 0.42 0.42">
+
+            <!-- == BASE: sala de experimento == -->
+            <!-- Suelo -->
+            <a-box position="0 -0.08 0" width="5.5" height="0.12" depth="3.5" color="#2a1f0f" metalness="0.1" roughness="0.9"></a-box>
+            <!-- Borde de suelo -->
+            <a-box position="0 -0.02 0" width="5.3" height="0.04" depth="3.3" color="#3a2a10" roughness="0.95"></a-box>
+
+            <!-- == MAMPARA CENTRAL: panel divisor (la "pared" del experimento Turing) == -->
+            <!-- Panel principal -->
+            <a-box position="0 1.1 0" width="0.12" height="2.4" depth="2.8" color="#1a1a2e"></a-box>
+            <!-- Borde metálico del panel -->
+            <a-box position="0 1.1 0" width="0.16" height="2.44" depth="0.12" color="#444" metalness="0.7"
+                rotation="0 0 0"></a-box>
+            <!-- Marco superior del panel -->
+            <a-box position="0 2.35 0" width="0.2" height="0.1" depth="2.9" color="#555" metalness="0.8"></a-box>
+
+            <!-- VENTANILLA / pantalla en el panel -->
+            <a-box position="0 1.3 0" width="0.06" height="0.85" depth="1.1" color="#001a33"></a-box>
+            <!-- Luz verde de la pantalla (parpadeo) -->
+            <a-box position="0 1.3 0.01" width="0.04" height="0.8" depth="1.05" color="#003300" emissive="#00ff00" emissive-intensity="0.18">
+                <a-animation attribute="material.emissive-intensity" dur="2500" direction="alternate" repeat="indefinite" from="0.18" to="0.08"></a-animation>
+            </a-box>
+
+            <!-- TEXTO EN PANTALLA (líneas de código) -->
+            <a-text value="¿Es usted humano?" position="0 1.6 0.62"  align="center" width="3.5" color="#00FF66" scale="0.55 0.55 0.55"></a-text>
+            <a-text value="> Soy una máquina." position="0 1.35 0.62" align="center" width="3.5" color="#00CC44" scale="0.48 0.48 0.48"></a-text>
+            <a-text value="> Demuéstrelo."     position="0 1.12 0.62" align="center" width="3.5" color="#00AA33" scale="0.45 0.45 0.45"></a-text>
+
+
+            <!-- ══ FIGURA A: TURING (izquierda) ══ -->
+            <a-entity position="-1.55 0 0">
+                <!-- Cabeza -->
+                <a-sphere position="0 2.02 0" radius="0.28" color="#F5CBA7" metalness="0.0"></a-sphere>
+                <!-- Cabello oscuro -->
+                <a-sphere position="0 2.22 0" radius="0.26" color="#3b2008" scale="1 0.5 1"></a-sphere>
+                <!-- Ojo izquierdo -->
+                <a-sphere position="-0.1 2.05 0.23" radius="0.045" color="#1a1a1a"></a-sphere>
+                <!-- Ojo derecho -->
+                <a-sphere position="0.1 2.05 0.23" radius="0.045" color="#1a1a1a"></a-sphere>
+                <!-- Cuerpo: chaqueta oscura -->
+                <a-cylinder position="0 1.25 0" radius="0.32" height="1.0" color="#1c1c3c" metalness="0.0"></a-cylinder>
+                <!-- Camisa blanca (cuello) -->
+                <a-box position="0 1.68 0.22" width="0.22" height="0.28" depth="0.06" color="#f0f0f0"></a-box>
+                <!-- Corbata -->
+                <a-box position="0 1.55 0.26" width="0.08" height="0.4" depth="0.04" color="#8B0000"></a-box>
+                <!-- Piernas -->
+                <a-cylinder position="-0.12 0.36 0" radius="0.14" height="0.9" color="#2a2a4a"></a-cylinder>
+                <a-cylinder position="0.12 0.36 0"  radius="0.14" height="0.9" color="#2a2a4a"></a-cylinder>
+                <!-- Zapatos -->
+                <a-box position="-0.12 -0.1 0.08" width="0.2" height="0.12" depth="0.35" color="#111"></a-box>
+                <a-box position="0.12 -0.1 0.08"  width="0.2" height="0.12" depth="0.35" color="#111"></a-box>
+                <!-- Brazo derecho (hacia la mampara) -->
+                <a-cylinder position="0.42 1.35 0.3" radius="0.1" height="0.7" color="#1c1c3c" rotation="0 0 -55"></a-cylinder>
+                <!-- Mano izquierda -->
+                <a-sphere position="-0.42 1.25 0" radius="0.1" color="#F5CBA7"></a-sphere>
+                <!-- Etiqueta -->
+                <a-text value="ALAN TURING" position="0 2.55 0" align="center" width="3" color="#D2B48C" scale="0.7 0.7 0.7"></a-text>
+            </a-entity>
+
+
+            <!-- ══ FIGURA B: EVALUADOR (derecha) ══ -->
+            <a-entity position="1.55 0 0">
+                <!-- Cabeza -->
+                <a-sphere position="0 2.02 0" radius="0.28" color="#FDEBD0" metalness="0.0"></a-sphere>
+                <!-- Cabello -->
+                <a-sphere position="0 2.22 0" radius="0.26" color="#5d3a1a" scale="1 0.45 1"></a-sphere>
+                <!-- Ojos -->
+                <a-sphere position="-0.1 2.05 0.23" radius="0.045" color="#222"></a-sphere>
+                <a-sphere position="0.1  2.05 0.23" radius="0.045" color="#222"></a-sphere>
+                <!-- Cuerpo: americana gris -->
+                <a-cylinder position="0 1.25 0" radius="0.32" height="1.0" color="#4a4a4a" metalness="0.0"></a-cylinder>
+                <!-- Camisa -->
+                <a-box position="0 1.68 0.22" width="0.22" height="0.28" depth="0.06" color="#eee"></a-box>
+                <!-- Carpeta en la mano (evaluador toma notas) -->
+                <a-box position="0.5 1.3 0.3" width="0.32" height="0.42" depth="0.04" color="#8B4513"></a-box>
+                <a-box position="0.5 1.3 0.32" width="0.28" height="0.38" depth="0.02" color="#fffff0"></a-box>
+                <!-- Piernas -->
+                <a-cylinder position="-0.12 0.36 0" radius="0.14" height="0.9" color="#3a3a3a"></a-cylinder>
+                <a-cylinder position="0.12 0.36 0"  radius="0.14" height="0.9" color="#3a3a3a"></a-cylinder>
+                <a-box position="-0.12 -0.1 0.08" width="0.2" height="0.12" depth="0.35" color="#111"></a-box>
+                <a-box position="0.12 -0.1 0.08"  width="0.2" height="0.12" depth="0.35" color="#111"></a-box>
+                <!-- Etiqueta -->
+                <a-text value="EVALUADOR" position="0 2.55 0" align="center" width="3" color="#D2B48C" scale="0.7 0.7 0.7"></a-text>
+            </a-entity>
+
+
+            <!-- == PREGUNTAS FLOTANTES ANIMADAS == -->
+            <!-- Burbuja 1 -->
+            <a-entity position="-1.8 2.9 0.3">
+                <a-box width="1.8" height="0.45" depth="0.06" color="#001a33" opacity="0.85" border-radius="0.1"></a-box>
+                <a-text value="¿Puede pensar una máquina?" position="0 0 0.04" align="center" width="3.2" color="#00FF99" scale="0.55 0.55 0.55"></a-text>
+                <a-animation attribute="position" dur="3000" direction="alternate" repeat="indefinite" from="-1.8 2.9 0.3" to="-1.8 3.15 0.3"></a-animation>
+            </a-entity>
+            <!-- Burbuja 2 -->
+            <a-entity position="1.7 2.75 0.3">
+                <a-box width="1.5" height="0.45" depth="0.06" color="#1a0033" opacity="0.85"></a-box>
+                <a-text value="Turing Test · 1950" position="0 0 0.04" align="center" width="3" color="#AA88FF" scale="0.55 0.55 0.55"></a-text>
+                <a-animation attribute="position" dur="2600" direction="alternate" repeat="indefinite" from="1.7 2.75 0.3" to="1.7 2.98 0.3"></a-animation>
+            </a-entity>
+
+            <!-- == ETIQUETAS ERA == -->
+            <a-text value="PASADO DE LA IA · 1950–2011" position="0 3.6 0" align="center" width="8" color="#D2B48C"></a-text>
+            <a-text value="Turing · ELIZA · Deep Blue · Watson" position="0 -0.35 0" align="center" width="7" scale="0.55 0.55 0.55" color="#aaaaaa"></a-text>
+        </a-entity>
+
+        <!-- Flotación y giro suave -->
+        <a-animation attribute="position" dur="4000" direction="alternate" repeat="indefinite" from="0 0.2 -2.5" to="0 0.35 -2.5"></a-animation>
         <a-animation attribute="rotation" dur="28000" repeat="indefinite" to="0 360 0"></a-animation>
     </a-entity>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ■ PRESENTE (2012–2025)
+           ESCENA: Red neuronal — estructura tipo átomo
+           – Núcleo central brillante
+           – 3 anillos orbitales en ejes X, Y, Z
+           – 12 nodos esféricos (neuronas) en las órbitas
+           – Conexiones/líneas entre nodos centrales
+         ═══════════════════════════════════════════════════════════════ -->
+    <a-entity id="obj-presente" visible="false" position="0 1.0 -2.5">
+        <a-entity scale="0.55 0.55 0.55">
+
+            <!-- == NÚCLEO: chip / cerebro IA == -->
+            <!-- Capa exterior (wireframe) -->
+            <a-sphere position="0 0 0" radius="0.52" color="#00CCFF" wireframe="true" emissive="#003366" emissive-intensity="0.5">
+                <a-animation attribute="rotation" dur="9000" repeat="indefinite" to="0 360 0"></a-animation>
+            </a-sphere>
+            <!-- Capa media sólida -->
+            <a-sphere position="0 0 0" radius="0.36" color="#0088FF" emissive="#0044AA" emissive-intensity="0.7" metalness="0.8">
+                <a-animation attribute="rotation" dur="6000" repeat="indefinite" to="360 0 360"></a-animation>
+            </a-sphere>
+            <!-- Núcleo pulsante -->
+            <a-sphere position="0 0 0" radius="0.18" color="#FFFFFF" emissive="#88DDFF" emissive-intensity="1.2">
+                <a-animation attribute="scale" dur="1600" direction="alternate" repeat="indefinite" from="1 1 1" to="1.25 1.25 1.25"></a-animation>
+            </a-sphere>
+
+            <!-- == ANILLO ORBITAL 1: eje Y (horizontal) == -->
+            <a-torus position="0 0 0" radius="1.3" radius-tubular="0.025" color="#00FFcc" rotation="0 0 0">
+                <a-animation attribute="rotation" dur="5000" repeat="indefinite" to="0 360 0"></a-animation>
+            </a-torus>
+            <!-- == ANILLO ORBITAL 2: eje X (vertical) == -->
+            <a-torus position="0 0 0" radius="1.3" radius-tubular="0.025" color="#FF6600" rotation="90 0 0">
+                <a-animation attribute="rotation" dur="6500" repeat="indefinite" to="360 0 0"></a-animation>
+            </a-torus>
+            <!-- == ANILLO ORBITAL 3: eje diagonal == -->
+            <a-torus position="0 0 0" radius="1.3" radius-tubular="0.025" color="#FFCC00" rotation="55 30 0">
+                <a-animation attribute="rotation" dur="7500" repeat="indefinite" to="360 360 0"></a-animation>
+            </a-torus>
+            <!-- Anillo exterior decorativo -->
+            <a-torus position="0 0 0" radius="1.7" radius-tubular="0.015" color="#9966FF" opacity="0.5" rotation="20 45 0">
+                <a-animation attribute="rotation" dur="12000" repeat="indefinite" to="0 0 360"></a-animation>
+            </a-torus>
+
+            <!-- == NODOS ESFÉRICOS (neuronas) en posiciones de órbita == -->
+            <!-- Órbita horizontal (anillo 1) — 4 nodos -->
+            <a-sphere radius="0.12" color="#00FFCC" emissive="#00FFCC" emissive-intensity="0.8" position="1.3 0 0">
+                <a-animation attribute="scale" dur="1800" direction="alternate" repeat="indefinite" from="1 1 1" to="1.4 1.4 1.4"></a-animation>
+            </a-sphere>
+            <a-sphere radius="0.12" color="#00FFCC" emissive="#00FFCC" emissive-intensity="0.8" position="-1.3 0 0">
+                <a-animation attribute="scale" dur="2100" direction="alternate" repeat="indefinite" from="1 1 1" to="1.3 1.3 1.3"></a-animation>
+            </a-sphere>
+            <a-sphere radius="0.1"  color="#00DDAA" emissive="#00DDAA" emissive-intensity="0.6" position="0 0 1.3">
+                <a-animation attribute="scale" dur="1500" direction="alternate" repeat="indefinite" from="1 1 1" to="1.35 1.35 1.35"></a-animation>
+            </a-sphere>
+            <a-sphere radius="0.1"  color="#00DDAA" emissive="#00DDAA" emissive-intensity="0.6" position="0 0 -1.3">
+                <a-animation attribute="scale" dur="2300" direction="alternate" repeat="indefinite" from="1 1 1" to="1.3 1.3 1.3"></a-animation>
+            </a-sphere>
+            <!-- Órbita vertical (anillo 2) — 4 nodos -->
+            <a-sphere radius="0.12" color="#FF6600" emissive="#FF6600" emissive-intensity="0.8" position="0 1.3 0">
+                <a-animation attribute="scale" dur="1700" direction="alternate" repeat="indefinite" from="1 1 1" to="1.4 1.4 1.4"></a-animation>
+            </a-sphere>
+            <a-sphere radius="0.12" color="#FF6600" emissive="#FF6600" emissive-intensity="0.8" position="0 -1.3 0">
+                <a-animation attribute="scale" dur="2000" direction="alternate" repeat="indefinite" from="1 1 1" to="1.35 1.35 1.35"></a-animation>
+            </a-sphere>
+            <a-sphere radius="0.1"  color="#FF8833" emissive="#FF8833" emissive-intensity="0.6" position="0.9 0.9 0">
+                <a-animation attribute="scale" dur="1400" direction="alternate" repeat="indefinite" from="1 1 1" to="1.3 1.3 1.3"></a-animation>
+            </a-sphere>
+            <a-sphere radius="0.1"  color="#FF8833" emissive="#FF8833" emissive-intensity="0.6" position="-0.9 -0.9 0">
+                <a-animation attribute="scale" dur="2200" direction="alternate" repeat="indefinite" from="1 1 1" to="1.25 1.25 1.25"></a-animation>
+            </a-sphere>
+            <!-- Órbita diagonal (anillo 3) — 4 nodos -->
+            <a-sphere radius="0.11" color="#FFCC00" emissive="#FFCC00" emissive-intensity="0.8" position="0.92 0 0.92">
+                <a-animation attribute="scale" dur="1900" direction="alternate" repeat="indefinite" from="1 1 1" to="1.38 1.38 1.38"></a-animation>
+            </a-sphere>
+            <a-sphere radius="0.11" color="#FFCC00" emissive="#FFCC00" emissive-intensity="0.8" position="-0.92 0 -0.92">
+                <a-animation attribute="scale" dur="1650" direction="alternate" repeat="indefinite" from="1 1 1" to="1.35 1.35 1.35"></a-animation>
+            </a-sphere>
+            <a-sphere radius="0.09" color="#FFAA00" emissive="#FFAA00" emissive-intensity="0.5" position="0.92 0 -0.92">
+                <a-animation attribute="scale" dur="2400" direction="alternate" repeat="indefinite" from="1 1 1" to="1.28 1.28 1.28"></a-animation>
+            </a-sphere>
+            <a-sphere radius="0.09" color="#FFAA00" emissive="#FFAA00" emissive-intensity="0.5" position="-0.92 0 0.92">
+                <a-animation attribute="scale" dur="2700" direction="alternate" repeat="indefinite" from="1 1 1" to="1.25 1.25 1.25"></a-animation>
+            </a-sphere>
+
+            <!-- == ETIQUETA == -->
+            <a-text value="PRESENTE DE LA IA · 2012–2025" position="0 2.3 0" align="center" width="8" color="#FFAA44"></a-text>
+            <a-text value="Red Neuronal · Deep Learning · Transformers · ChatGPT" position="0 -2.05 0" align="center" width="8" scale="0.55 0.55 0.55" color="#FFD966"></a-text>
+        </a-entity>
+
+        <a-animation attribute="position" dur="3800" direction="alternate" repeat="indefinite" from="0 1.0 -2.5" to="0 1.18 -2.5"></a-animation>
+        <a-animation attribute="rotation" dur="32000" repeat="indefinite" to="0 360 0"></a-animation>
+    </a-entity>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ■ FUTURO (2026–2050+)
+           ESCENA: Robot humanoide (AGI/ASI)
+           – Torso articulado
+           – Cabeza con visor holográfico
+           – Brazos y manos detalladas
+           – Halo / aura de energía orbital
+         ═══════════════════════════════════════════════════════════════ -->
+    <a-entity id="obj-futuro" visible="false" position="0 0.1 -2.5">
+        <a-entity scale="0.45 0.45 0.45">
+
+            <!-- == BASE: plataforma de energía == -->
+            <a-cylinder position="0 -0.06 0" radius="1.2" height="0.1" color="#0a0a14" metalness="0.98"></a-cylinder>
+            <!-- Portal de energía en la base -->
+            <a-torus position="0 0 0" radius="1.1" radius-tubular="0.032" color="#CC00FF" rotation="90 0 0" emissive="#8800AA" emissive-intensity="0.7">
+                <a-animation attribute="rotation" dur="5000" repeat="indefinite" from="90 0 0" to="90 360 0"></a-animation>
+            </a-torus>
+            <a-torus position="0 0 0" radius="0.78" radius-tubular="0.022" color="#FF44FF" rotation="90 20 0" emissive="#AA00AA" emissive-intensity="0.5">
+                <a-animation attribute="rotation" dur="3800" repeat="indefinite" from="90 20 0" to="90 380 0"></a-animation>
+            </a-torus>
+
+            <!-- == PIERNAS == -->
+            <!-- Cadera -->
+            <a-box position="0 0.55 0" width="0.78" height="0.22" depth="0.5" color="#1a1a3a" metalness="0.8"></a-box>
+            <!-- Pierna izquierda -->
+            <a-cylinder position="-0.25 0.22 0" radius="0.13" height="0.62" color="#222244" metalness="0.75"></a-cylinder>
+            <a-cylinder position="-0.25 -0.16 0" radius="0.11" height="0.55" color="#1a1a3a" metalness="0.8"></a-cylinder>
+            <!-- Pie izquierdo -->
+            <a-box position="-0.25 -0.49 0.1" width="0.24" height="0.1" depth="0.42" color="#111133" metalness="0.9"></a-box>
+            <!-- Pierna derecha -->
+            <a-cylinder position="0.25 0.22 0" radius="0.13" height="0.62" color="#222244" metalness="0.75"></a-cylinder>
+            <a-cylinder position="0.25 -0.16 0" radius="0.11" height="0.55" color="#1a1a3a" metalness="0.8"></a-cylinder>
+            <!-- Pie derecho -->
+            <a-box position="0.25 -0.49 0.1" width="0.24" height="0.1" depth="0.42" color="#111133" metalness="0.9"></a-box>
+
+            <!-- == TORSO == -->
+            <a-box position="0 1.18 0" width="0.82" height="0.88" depth="0.55" color="#1e1e40" metalness="0.85" roughness="0.25"></a-box>
+            <!-- Panel pectoral con luz -->
+            <a-box position="0 1.28 0.28" width="0.52" height="0.42" depth="0.06" color="#0a0a22" metalness="0.9"></a-box>
+            <a-box position="0 1.28 0.3" width="0.44" height="0.34" depth="0.04" color="#000033" emissive="#0033ff" emissive-intensity="0.5">
+                <a-animation attribute="material.emissive-intensity" dur="2000" direction="alternate" repeat="indefinite" from="0.5" to="0.15"></a-animation>
+            </a-box>
+            <!-- Líneas de energía en el torso -->
+            <a-box position="-0.2 1.18 0.3" width="0.04" height="0.7" depth="0.02" color="#00FFFF" emissive="#00FFFF" emissive-intensity="0.7">
+                <a-animation attribute="material.emissive-intensity" dur="1800" direction="alternate" repeat="indefinite" from="0.7" to="0.15"></a-animation>
+            </a-box>
+            <a-box position="0.2 1.18 0.3" width="0.04" height="0.7" depth="0.02" color="#00FFFF" emissive="#00FFFF" emissive-intensity="0.7">
+                <a-animation attribute="material.emissive-intensity" dur="2200" direction="alternate" repeat="indefinite" from="0.7" to="0.12"></a-animation>
+            </a-box>
+            <!-- Hombros -->
+            <a-sphere position="-0.52 1.56 0" radius="0.2" color="#2a2a50" metalness="0.9"></a-sphere>
+            <a-sphere position="0.52 1.56 0"  radius="0.2" color="#2a2a50" metalness="0.9"></a-sphere>
+
+            <!-- == BRAZO IZQUIERDO == -->
+            <a-cylinder position="-0.72 1.22 0" radius="0.11" height="0.72" color="#222244" metalness="0.8" rotation="0 0 12"></a-cylinder>
+            <!-- Codo -->
+            <a-sphere position="-0.87 0.88 0" radius="0.13" color="#2a2a50" metalness="0.85"></a-sphere>
+            <!-- Antebrazo -->
+            <a-cylinder position="-0.95 0.58 0" radius="0.095" height="0.58" color="#1e1e40" metalness="0.8" rotation="0 0 8"></a-cylinder>
+            <!-- Mano / garra -->
+            <a-sphere position="-1.0 0.28 0" radius="0.14" color="#222244" metalness="0.88"></a-sphere>
+            <!-- Dedos -->
+            <a-cylinder position="-1.0 0.1 0.08"  radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="10 0 0"></a-cylinder>
+            <a-cylinder position="-1.08 0.1 0.02" radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="8 0 -5"></a-cylinder>
+            <a-cylinder position="-0.92 0.1 0.02" radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="8 0 5"></a-cylinder>
+
+            <!-- == BRAZO DERECHO == -->
+            <a-cylinder position="0.72 1.22 0" radius="0.11" height="0.72" color="#222244" metalness="0.8" rotation="0 0 -12"></a-cylinder>
+            <a-sphere position="0.87 0.88 0" radius="0.13" color="#2a2a50" metalness="0.85"></a-sphere>
+            <a-cylinder position="0.95 0.58 0" radius="0.095" height="0.58" color="#1e1e40" metalness="0.8" rotation="0 0 -8"></a-cylinder>
+            <a-sphere position="1.0 0.28 0" radius="0.14" color="#222244" metalness="0.88"></a-sphere>
+            <a-cylinder position="1.0 0.1 0.08"  radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="10 0 0"></a-cylinder>
+            <a-cylinder position="1.08 0.1 0.02" radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="8 0 5"></a-cylinder>
+            <a-cylinder position="0.92 0.1 0.02" radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="8 0 -5"></a-cylinder>
+
+            <!-- == CUELLO == -->
+            <a-cylinder position="0 1.72 0" radius="0.14" height="0.26" color="#1e1e40" metalness="0.85"></a-cylinder>
+
+            <!-- == CABEZA == -->
+            <a-box position="0 2.12 0" width="0.65" height="0.62" depth="0.58" color="#1a1a3a" metalness="0.9" roughness="0.2"></a-box>
+            <!-- VISOR HOLOGRÁFICO (pantalla facial) -->
+            <a-box position="0 2.16 0.3" width="0.5" height="0.3" depth="0.06" color="#000011" metalness="0.95"></a-box>
+            <a-box position="0 2.16 0.33" width="0.46" height="0.26" depth="0.03" color="#000033" emissive="#0088ff" emissive-intensity="0.9">
+                <a-animation attribute="material.emissive" dur="1500" direction="alternate" repeat="indefinite" from="#0088ff" to="#00ffcc"></a-animation>
+            </a-box>
+            <!-- Líneas de escaneo en el visor -->
+            <a-box position="0 2.22 0.345" width="0.4" height="0.025" depth="0.01" color="#00FFFF" emissive="#00FFFF" emissive-intensity="1">
+                <a-animation attribute="position" dur="1200" direction="alternate" repeat="indefinite" from="0 2.22 0.345" to="0 2.08 0.345"></a-animation>
+            </a-box>
+            <!-- Auricular/antena cabeza -->
+            <a-cylinder position="-0.34 2.52 0" radius="0.04" height="0.4" color="#333355" metalness="0.9" rotation="0 0 15"></a-cylinder>
+            <a-sphere position="-0.4 2.72 0" radius="0.06" color="#CC00FF" emissive="#8800AA">
+                <a-animation attribute="material.emissive-intensity" dur="900" direction="alternate" repeat="indefinite" from="0.8" to="0.1"></a-animation>
+            </a-sphere>
+            <a-cylinder position="0.34 2.52 0" radius="0.04" height="0.4" color="#333355" metalness="0.9" rotation="0 0 -15"></a-cylinder>
+            <a-sphere position="0.4 2.72 0" radius="0.06" color="#00CCFF" emissive="#0088AA">
+                <a-animation attribute="material.emissive-intensity" dur="1100" direction="alternate" repeat="indefinite" from="0.8" to="0.1"></a-animation>
+            </a-sphere>
+
+            <!-- == HALO / AURA ORBITAL ALREDEDOR DEL CUERPO == -->
+            <a-torus position="0 1.2 0" radius="1.35" radius-tubular="0.028" color="#9900FF" emissive="#6600AA" emissive-intensity="0.6" rotation="0 0 0">
+                <a-animation attribute="rotation" dur="6000" repeat="indefinite" to="0 360 0"></a-animation>
+            </a-torus>
+            <a-torus position="0 1.2 0" radius="1.1" radius-tubular="0.02" color="#00FFFF" emissive="#0088AA" emissive-intensity="0.5" rotation="80 20 0">
+                <a-animation attribute="rotation" dur="4500" repeat="indefinite" to="360 0 0"></a-animation>
+            </a-torus>
+            <!-- Partículas de energía -->
+            <a-sphere radius="0.055" color="#FF00FF" emissive="#FF00FF" emissive-intensity="1" position="1.35 1.2 0">
+                <a-animation attribute="position" dur="6000" repeat="indefinite"
+                    from="1.35 1.2 0" to="0 1.2 1.35" direction="normal"></a-animation>
+            </a-sphere>
+            <a-sphere radius="0.045" color="#00FFFF" emissive="#00FFFF" emissive-intensity="1" position="-1.35 1.2 0">
+                <a-animation attribute="position" dur="4500" repeat="indefinite"
+                    from="-1.35 1.2 0" to="0 1.2 -1.35" direction="normal"></a-animation>
+            </a-sphere>
+
+            <!-- == ETIQUETAS == -->
+            <a-text value="FUTURO DE LA IA · 2026–2050+" position="0 3.2 0" align="center" width="8" color="#E040FB"></a-text>
+            <a-text value="AGI · ASI · Robot · Singularidad" position="0 -0.85 0" align="center" width="7" scale="0.55 0.55 0.55" color="#CE93D8"></a-text>
+        </a-entity>
+
+        <a-animation attribute="position" dur="3500" direction="alternate" repeat="indefinite" from="0 0.1 -2.5" to="0 0.28 -2.5"></a-animation>
+        <a-animation attribute="rotation" dur="24000" repeat="indefinite" to="0 360 0"></a-animation>
+    </a-entity>
+
 </a-scene>
 
+
 <script>
+// ── Era desde URL ──────────────────────────────────────────────────────────
 const p = new URLSearchParams(location.search);
 let era = p.get('era') || 'present';
-if (era === 'pasado') era = 'past';
+if (era === 'pasado')   era = 'past';
 if (era === 'presente') era = 'present';
-if (era === 'futuro') era = 'future';
+if (era === 'futuro')   era = 'future';
 if (!['past','present','future'].includes(era)) era = 'present';
 
-const cfg = {
-    past:    { icon:'🕰️', title:'🕰️ PASADO IA (1950–2011)', sub:'Test de Turing · Computadora Vintage', chipClass:'chip-past', chipTxt:'🕰️ PASADO', obj:'obj-pasado' },
-    present: { icon:'⚡',  title:'⚡ PRESENTE IA (2012–2025)', sub:'Redes Neuronales · Deep Learning', chipClass:'chip-present', chipTxt:'⚡ PRESENTE', obj:'obj-presente' },
-    future:  { icon:'🚀',  title:'🚀 FUTURO IA (2026–2050+)', sub:'AGI · ASI · Singularidad · Robot', chipClass:'chip-future', chipTxt:'🚀 FUTURO', obj:'obj-futuro' }
-}[era];
+const ERAS = {
+    past: {
+        icon:'🕰️',
+        title:'🕰️ PASADO DE LA IA (1950–2011)',
+        sub:'Test de Turing · ELIZA · Deep Blue · Watson',
+        chipClass:'chip-past', chipTxt:'🕰️ PASADO IA',
+        obj:'obj-pasado',
+        desc:'Escena: el experimento del <strong style="color:#fff">Test de Turing</strong>.<br>Mueve el dispositivo para explorar.'
+    },
+    present: {
+        icon:'⚡',
+        title:'⚡ PRESENTE DE LA IA (2012–2025)',
+        sub:'AlexNet · AlphaGo · Transformers · ChatGPT · GPT-4o',
+        chipClass:'chip-present', chipTxt:'⚡ PRESENTE IA',
+        obj:'obj-presente',
+        desc:'Modelo: <strong style="color:#fff">Red Neuronal</strong> — estructura de átomo con nodos y órbitas.<br>Mueve el dispositivo para explorar.'
+    },
+    future: {
+        icon:'🚀',
+        title:'🚀 FUTURO DE LA IA (2026–2050+)',
+        sub:'AGI · ASI · Singularidad · Superinteligencia',
+        chipClass:'chip-future', chipTxt:'🚀 FUTURO IA',
+        obj:'obj-futuro',
+        desc:'Modelo: <strong style="color:#fff">Robot Humanoide AGI</strong> con aura de energía orbital.<br>Mueve el dispositivo para explorar.'
+    }
+};
 
-document.getElementById('ov-icon').textContent = cfg.icon;
+const cfg = ERAS[era];
+
+// Poblar overlay
+document.getElementById('ov-icon').textContent  = cfg.icon;
 document.getElementById('ov-title').textContent = cfg.title;
 const chip = document.getElementById('ov-chip');
 chip.className = 'era-chip ' + cfg.chipClass;
 chip.textContent = cfg.chipTxt;
+document.getElementById('ov-desc').innerHTML = cfg.desc;
 
-// Forzar transparencia del canvas de A-Frame
-document.addEventListener('DOMContentLoaded', () => {
-    const observer = new MutationObserver(() => {
-        const canvas = document.querySelector('#arScene canvas');
-        if (canvas) {
-            canvas.style.background = 'transparent !important';
-            observer.disconnect();
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-});
+// Aviso HTTPS
+if (location.protocol !== 'https:' && !['localhost','127.0.0.1'].includes(location.hostname)) {
+    const w = document.getElementById('https-warn');
+    w.style.display = 'block';
+    setTimeout(() => { w.style.opacity='0'; setTimeout(()=>w.remove(),1200); }, 7000);
+}
 
+// ── INICIO DE AR ───────────────────────────────────────────────────────────
 document.getElementById('btn-start').addEventListener('click', async () => {
     const btn = document.getElementById('btn-start');
     btn.disabled = true;
-    btn.textContent = '⏳ Activando cámara...';
-    document.getElementById('loadingMsg').style.display = 'block';
+    btn.textContent = '⏳ Activando cámara…';
 
     try {
+        // Solicitar cámara trasera (ideal para móvil)
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+            video: {
+                facingMode: { ideal: 'environment' },
+                width:  { ideal: 1280 },
+                height: { ideal: 720 }
+            },
             audio: false
         });
 
-        const vid = document.createElement('video');
-        vid.setAttribute('autoplay', '');
-        vid.setAttribute('playsinline', '');
-        vid.setAttribute('muted', '');
-        vid.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1;';
+        // ── Inyectar video como fondo real ──
+        const vid = document.getElementById('cam-video');
         vid.srcObject = stream;
-        document.body.prepend(vid);
-        
+        // Si es cámara trasera NO espejamos
+        const track = stream.getVideoTracks()[0];
+        const settings = track.getSettings();
+        if (settings.facingMode === 'user') {
+            vid.style.transform = 'scaleX(-1)'; // espejo sólo para cámara frontal
+        } else {
+            vid.style.transform = 'none';
+        }
+        vid.style.display = 'block';
         await new Promise(r => { vid.onloadedmetadata = () => { vid.play(); r(); }; });
 
+        // ── Configurar A-Frame con alpha transparente ──
         const scene = document.getElementById('arScene');
         scene.style.display = 'block';
 
- // Forzar transparencia del canvas
-        setTimeout(() => {
-            const canvas = scene.querySelector('canvas');
-            if (canvas) {
-                canvas.style.background = 'transparent !important';
-                const ctx = canvas.getContext('webgl2') || canvas.getContext('webgl');
-                if (ctx) {
-                    ctx.clearColor(0, 0, 0, 0);
-                }
-            }
-        }, 100);
+        // Esperar a que la escena esté lista y forzar fondo transparente
+        scene.addEventListener('loaded', () => forceTransparent(scene), { once: true });
+        if (scene.hasLoaded) forceTransparent(scene);
 
+        // ── Activar objeto 3D correcto ──
+        ['obj-pasado','obj-presente','obj-futuro'].forEach(id =>
+            document.getElementById(id).setAttribute('visible','false'));
+        document.getElementById(cfg.obj).setAttribute('visible','true');
 
-        ['obj-pasado', 'obj-presente', 'obj-futuro'].forEach(id =>
-            document.getElementById(id).setAttribute('visible', 'false'));
-        document.getElementById(cfg.obj).setAttribute('visible', 'true');
-
+        // ── Actualizar UI ──
         document.getElementById('overlay').classList.add('fade-out');
-        document.getElementById('era-label').innerHTML = cfg.title + '<span>' + cfg.sub + '</span>';
+        document.getElementById('era-label').innerHTML =
+            cfg.title + '<span>' + cfg.sub + '</span>';
         document.getElementById('cam-dot').classList.add('on');
         document.getElementById('cam-txt').textContent = 'Cámara activa';
-        document.getElementById('loadingMsg').style.display = 'none';
 
+        // Hint
+        setTimeout(() => {
+            const h = document.getElementById('ar-hint');
+            h.classList.add('show');
+            setTimeout(() => h.classList.remove('show'), 4000);
+        }, 1500);
+
+        // Cleanup
         window.addEventListener('pagehide', () => stream.getTracks().forEach(t => t.stop()));
 
-    } catch (e) {
-        console.error(e);
-        document.getElementById('loadingMsg').style.display = 'none';
+    } catch (err) {
+        console.error('Error cámara:', err);
         document.getElementById('overlay').classList.add('fade-out');
         document.getElementById('perm-error').classList.add('visible');
     }
 });
+
+// Forzar fondo completamente transparente en el canvas WebGL
+function forceTransparent(scene) {
+    try {
+        const renderer = scene.renderer;
+        if (renderer) {
+            renderer.setClearColor(0x000000, 0);
+            renderer.setPixelRatio(window.devicePixelRatio);
+        }
+        const canvas = scene.canvas;
+        if (canvas) {
+            canvas.style.background = 'transparent';
+            canvas.style.position   = 'absolute';
+            canvas.style.top = '0'; canvas.style.left = '0';
+        }
+    } catch(e) { console.warn('forceTransparent:', e); }
+}
 </script>
+
 </body>
 </html>
