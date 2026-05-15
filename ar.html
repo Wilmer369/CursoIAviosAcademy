@@ -302,6 +302,18 @@ const chip = document.getElementById('ov-chip');
 chip.className = 'era-chip ' + cfg.chipClass;
 chip.textContent = cfg.chipTxt;
 
+// Forzar transparencia del canvas de A-Frame
+document.addEventListener('DOMContentLoaded', () => {
+    const observer = new MutationObserver(() => {
+        const canvas = document.querySelector('#arScene canvas');
+        if (canvas) {
+            canvas.style.background = 'transparent !important';
+            observer.disconnect();
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+});
+
 document.getElementById('btn-start').addEventListener('click', async () => {
     const btn = document.getElementById('btn-start');
     btn.disabled = true;
@@ -326,6 +338,19 @@ document.getElementById('btn-start').addEventListener('click', async () => {
 
         const scene = document.getElementById('arScene');
         scene.style.display = 'block';
+
+ // Forzar transparencia del canvas
+        setTimeout(() => {
+            const canvas = scene.querySelector('canvas');
+            if (canvas) {
+                canvas.style.background = 'transparent !important';
+                const ctx = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                if (ctx) {
+                    ctx.clearColor(0, 0, 0, 0);
+                }
+            }
+        }, 100);
+
 
         ['obj-pasado', 'obj-presente', 'obj-futuro'].forEach(id =>
             document.getElementById(id).setAttribute('visible', 'false'));
