@@ -9,8 +9,9 @@
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; background: #000; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
+        html, body { width: 100%; height: 100%; background: transparent; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
         a-scene { display: block; width: 100vw; height: 100vh; }
+        a-scene canvas { background: transparent !important; }
         
         #top-bar {
             position: fixed; top: 0; left: 0; right: 0;
@@ -141,7 +142,7 @@
 <div id="cam-status"><div class="dot" id="cam-dot"></div><span id="cam-txt">Cámara inactiva</span></div>
 <div class="loading-models" id="loadingMsg">📦 Cargando modelos 3D...</div>
 
-<a-scene id="arScene" style="display:none;" embedded vr-mode-ui="enabled: false" renderer="antialias:true; logarithmicDepthBuffer:true;">
+<a-scene id="arScene" style="display:none;" embedded vr-mode-ui="enabled: false" renderer="antialias:true; logarithmicDepthBuffer:true; colorManagement: true; alpha: true;" background="color: transparent;">
     <a-camera position="0 1.6 0" look-controls="enabled:true" wasd-controls="enabled:false"></a-camera>
     
     <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
