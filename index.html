@@ -55,6 +55,7 @@
             z-index: -1;
         }
 
+        /* VIOS ACADEMY BADGE - ESQUINA SUPERIOR DERECHA - MÓVIL AMIGABLE */
         .vios-badge {
             position: fixed;
             top: 12px;
@@ -72,7 +73,6 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             text-align: center;
-            border-radius: 0;
         }
         
         .vios-badge:hover {
@@ -280,6 +280,7 @@
             margin-bottom: 10px;
         }
 
+        /* Estilos para recursos multimedia - MÓVIL */
         .media-resource {
             margin-top: 12px;
             padding-top: 10px;
@@ -306,6 +307,7 @@
             color: black;
         }
         
+        /* Estilo especial para videos - botón más grande en móvil */
         .video-short-btn {
             background: linear-gradient(135deg, #FF0000, #CC0000);
             color: white;
@@ -350,6 +352,7 @@
             box-shadow: 0 0 12px cyan;
         }
 
+        /* AR Panel Móvil */
         .ar-panel {
             position: fixed;
             bottom: 15px;
@@ -387,6 +390,7 @@
             color: cyan;
         }
 
+        /* Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -445,7 +449,7 @@
             .year { font-size: 1.2rem; }
             .milestone-name { font-size: 0.85rem; }
             .era-btn { padding: 6px 14px; font-size: 0.75rem; }
-            .vios-badge { width: 65px; height: 65px; top: 8px; right: 8px; border-radius: 12px; }
+            .vios-badge { width: 65px; height: 65px; top: 8px; right: 8px; }
             .vios-badge span { font-size: 0.75rem; }
             .vios-badge small { font-size: 0.6rem; }
             .ar-panel button { font-size: 0.6rem; flex-direction: column; gap: 3px; }
@@ -458,6 +462,7 @@
 <div class="grid-lines"></div>
 <div class="glow-orb"></div>
 
+<!-- VIOS ACADEMY BADGE -->
 <div class="vios-badge" onclick="window.open('https://viosacademy.com', '_blank')">
     <span>VIOS</span>
     <small>ACADEMY</small>
@@ -494,6 +499,7 @@
 </div>
 
 <script>
+    // DATOS ACTUALIZADOS Y VERIFICADOS (Videos funcionales en español)
     const timelineData = {
         past: [
             { year: "1950", title: "Test de Turing", desc: "Alan Turing publica 'Computing Machinery and Intelligence'.", extra: "Propone el famoso Test de Turing como medida de inteligencia artificial.", media: { type: "short", url: "https://www.youtube.com/shorts/M0xDzUGv3Hg", title: "📱 ¿Qué es el Test de Turing?" } },
@@ -519,9 +525,11 @@
 
     let currentEra = "present";
 
+    // Función para generar HTML de recursos multimedia (con soporte para Shorts)
     function getMediaHTML(media) {
         if (!media) return '';
         if (media.type === 'short') {
+            // Los Shorts se abren en la app de YouTube para mejor experiencia móvil
             return `<div class="media-resource">
                         <a href="${media.url}" target="_blank" class="media-link video-short-btn"><i class="fab fa-youtube"></i> ${media.title} ⚡</a>
                     </div>`;
@@ -615,7 +623,11 @@
     }
 
     function openAR(era) {
-        window.location.href = `ar.html?era=${era}`;
+        let eraSpanish = "";
+        if (era === "past") eraSpanish = "past";
+        else if (era === "present") eraSpanish = "present";
+        else if (era === "future") eraSpanish = "future";
+        window.location.href = `ar.html?era=${eraSpanish}`;
     }
 
     function setActiveEra(eraKey) {
