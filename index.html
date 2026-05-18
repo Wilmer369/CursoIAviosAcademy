@@ -115,7 +115,7 @@
 
         .hero {
             text-align: center;
-            padding: 50px 16px 30px;
+            padding: 150px 16px 30px;
             border-bottom: 1px solid rgba(255, 102, 0, 0.35);
         }
 
@@ -145,7 +145,11 @@
             border-radius: 60px;
             padding: 5px 14px;
             font-size: 0.7rem;
+
             margin-bottom: 15px;
+
+	    margin-top: 10px;
+	    margin-bottom: 15px;
             color: var(--color-primary);
         }
 
@@ -460,6 +464,20 @@
             .era-btn { padding: 6px 14px; font-size: 0.75rem; }
             .ar-panel button { font-size: 0.6rem; flex-direction: column; gap: 3px; }
             .ar-panel button i { font-size: 1rem; }
+
+@media (max-width: 600px) {
+            .vios-badge { width: 64px; height: 64px; top: 8px; left: 8px; }
+            .vios-badge img { height: 46px; }
+            .hero h1 { font-size: 1.6rem; }
+            .year { font-size: 1.2rem; }
+            .milestone-name { font-size: 0.85rem; }
+            .era-btn { padding: 6px 14px; font-size: 0.75rem; }
+            .ar-panel button { font-size: 0.6rem; flex-direction: column; gap: 3px; }
+            .ar-panel button i { font-size: 1rem; }
+            
+            /* Subir un poco el espacio en móviles si es necesario */
+            .hero { padding-top: 85px; } 
+        
         }
     </style>
 </head>
