@@ -52,6 +52,7 @@
         }
 
         .glow-orb {
+	    Display: none;
             position: fixed;
             width: 70vw;
             height: 70vw;
@@ -63,11 +64,11 @@
             z-index: -1;
         }
 
-        /* VIOS ACADEMY LOGO - ESQUINA SUPERIOR DERECHA */
+        /* VIOS ACADEMY LOGO - ESQUINA SUPERIOR izquierda */
         .vios-badge {
             position: fixed;
             top: 12px;
-            right: 12px;
+            left: 40px;
             width: 80px;
             height: 80px;
             display: flex;
@@ -77,14 +78,14 @@
             cursor: pointer;
             transition: transform 0.2s, filter 0.2s;
             border-radius: 50%;
-            background: rgba(10, 10, 31, 0.6);
-            border: 1.5px solid rgba(255, 102, 0, 0.4);
-            box-shadow: 0 0 18px rgba(255, 102, 0, 0.5);
+            background: transparent;
+            border: none;
+            box-shadow: none;
         }
         
         .vios-badge:hover {
             transform: scale(1.05);
-            box-shadow: 0 0 28px rgba(255, 102, 0, 0.8);
+           
         }
 
         .vios-badge img {
@@ -95,7 +96,7 @@
         }
 
         @media (max-width: 600px) {
-            .vios-badge { width: 64px; height: 64px; top: 8px; right: 8px; }
+            .vios-badge { width: 64px; height: 64px; top: 8px; left: 36px; }
             .vios-badge img { height: 46px; }
         }
 
