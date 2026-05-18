@@ -4,9 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>VIOS ACADEMY • NEURONEXUS • LÍNEA DEL TIEMPO IA</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        :root {
+            --color-primary: #FF6600;
+            --color-secondary: #00FFFF;
+            --color-dark-bg: #0A0A1F;
+            --color-card-bg: #1A1A30;
+            --color-text-light: #E0E0E0;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,10 +22,10 @@
         }
 
         body {
-            background: #0a0c12;
-            font-family: 'Space Grotesk', sans-serif;
+            background: var(--color-dark-bg);
+            font-family: 'Inter', sans-serif;
             overflow-x: hidden;
-            color: #eef5ff;
+            color: var(--color-text-light);
         }
 
         .cyber-bg {
@@ -27,7 +35,7 @@
             width: 100%;
             height: 100%;
             z-index: -2;
-            background: radial-gradient(circle at 20% 30%, #0a0f1a 0%, #020308 100%);
+            background: radial-gradient(circle at 20% 30%, #0d0d25 0%, var(--color-dark-bg) 100%);
         }
 
         .grid-lines {
@@ -37,8 +45,8 @@
             width: 100%;
             height: 100%;
             background-image: 
-                repeating-linear-gradient(0deg, rgba(0, 255, 255, 0.08) 0px, rgba(0, 255, 255, 0.08) 1px, transparent 1px, transparent 40px),
-                repeating-linear-gradient(90deg, rgba(0, 255, 255, 0.08) 0px, rgba(0, 255, 255, 0.08) 1px, transparent 1px, transparent 40px);
+                repeating-linear-gradient(0deg, rgba(255, 102, 0, 0.06) 0px, rgba(255, 102, 0, 0.06) 1px, transparent 1px, transparent 40px),
+                repeating-linear-gradient(90deg, rgba(0, 255, 255, 0.06) 0px, rgba(0, 255, 255, 0.06) 1px, transparent 1px, transparent 40px);
             z-index: -1;
             pointer-events: none;
         }
@@ -47,7 +55,7 @@
             position: fixed;
             width: 70vw;
             height: 70vw;
-            background: radial-gradient(circle, rgba(0,150,255,0.15) 0%, rgba(0,0,0,0) 70%);
+            background: radial-gradient(circle, rgba(255,102,0,0.12) 0%, rgba(0,0,0,0) 70%);
             border-radius: 50%;
             top: -20%;
             right: -30%;
@@ -55,45 +63,40 @@
             z-index: -1;
         }
 
-        /* VIOS ACADEMY BADGE - ESQUINA SUPERIOR DERECHA - MÓVIL AMIGABLE */
+        /* VIOS ACADEMY LOGO - ESQUINA SUPERIOR DERECHA */
         .vios-badge {
             position: fixed;
             top: 12px;
             right: 12px;
-            background: linear-gradient(135deg, #FF6B00, #FF8C00);
             width: 80px;
             height: 80px;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            box-shadow: 0 0 20px rgba(255, 107, 0, 0.6);
-            border: 2px solid rgba(255, 255, 255, 0.4);
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-align: center;
+            transition: transform 0.2s, filter 0.2s;
+            border-radius: 50%;
+            background: rgba(10, 10, 31, 0.6);
+            border: 1.5px solid rgba(255, 102, 0, 0.4);
+            box-shadow: 0 0 18px rgba(255, 102, 0, 0.5);
         }
         
         .vios-badge:hover {
             transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(255, 107, 0, 0.8);
+            box-shadow: 0 0 28px rgba(255, 102, 0, 0.8);
         }
-        
-        .vios-badge span {
-            font-family: 'Space Grotesk', monospace;
-            font-weight: 800;
-            font-size: 0.9rem;
-            letter-spacing: 1px;
-            color: white;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+
+        .vios-badge img {
+            height: 58px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 0 6px rgba(255, 102, 0, 0.9));
         }
-        
-        .vios-badge small {
-            font-size: 0.7rem;
-            display: block;
-            color: #FFFFFF;
-            margin-top: 4px;
+
+        @media (max-width: 600px) {
+            .vios-badge { width: 64px; height: 64px; top: 8px; right: 8px; }
+            .vios-badge img { height: 46px; }
         }
 
         ::-webkit-scrollbar {
@@ -101,24 +104,24 @@
         }
         
         ::-webkit-scrollbar-track {
-            background: #0f1722;
+            background: var(--color-dark-bg);
         }
         
         ::-webkit-scrollbar-thumb {
-            background: #00c3ff;
+            background: var(--color-primary);
             border-radius: 10px;
         }
 
         .hero {
             text-align: center;
             padding: 50px 16px 30px;
-            border-bottom: 1px solid rgba(0, 242, 255, 0.3);
+            border-bottom: 1px solid rgba(255, 102, 0, 0.35);
         }
 
         .hero h1 {
             font-size: 2.2rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #FFFFFF, #00f2ff, #9d4eff);
+            background: linear-gradient(135deg, #FFFFFF, var(--color-primary), var(--color-secondary));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -127,21 +130,22 @@
 
         .glitch {
             font-size: 0.75rem;
-            color: #8db5ff;
+            color: var(--color-secondary);
             letter-spacing: 2px;
-            font-family: monospace;
+            font-family: 'Inter', monospace;
             margin-top: 10px;
+            opacity: 0.8;
         }
 
         .chip-badge {
             display: inline-flex;
-            background: rgba(0, 255, 255, 0.1);
-            border: 1px solid rgba(0, 255, 255, 0.4);
+            background: rgba(255, 102, 0, 0.1);
+            border: 1px solid rgba(255, 102, 0, 0.45);
             border-radius: 60px;
             padding: 5px 14px;
             font-size: 0.7rem;
             margin-bottom: 15px;
-            color: #0ff;
+            color: var(--color-primary);
         }
 
         .era-tabs {
@@ -153,9 +157,9 @@
         }
 
         .era-btn {
-            background: rgba(10, 20, 30, 0.7);
+            background: rgba(10, 10, 31, 0.7);
             backdrop-filter: blur(8px);
-            border: 1px solid rgba(0, 242, 255, 0.3);
+            border: 1px solid rgba(255, 102, 0, 0.35);
             padding: 8px 18px;
             font-weight: 700;
             font-size: 0.85rem;
@@ -167,15 +171,15 @@
         }
 
         .era-btn.active {
-            background: linear-gradient(135deg, #00c6ff, #0072ff);
-            border-color: #0ff;
+            background: linear-gradient(135deg, var(--color-primary), #CC4400);
+            border-color: var(--color-primary);
             color: white;
-            box-shadow: 0 0 15px rgba(0, 114, 255, 0.6);
+            box-shadow: 0 0 15px rgba(255, 102, 0, 0.6);
         }
 
         .era-btn:hover {
-            border-color: #0ff;
-            color: #0ff;
+            border-color: var(--color-secondary);
+            color: var(--color-secondary);
             transform: translateY(-2px);
         }
 
@@ -192,17 +196,17 @@
         }
 
         .timeline-card {
-            background: rgba(12, 20, 28, 0.7);
+            background: rgba(26, 26, 48, 0.75);
             backdrop-filter: blur(12px);
             border-radius: 20px;
-            border: 1px solid rgba(0, 242, 255, 0.25);
+            border: 1px solid rgba(255, 102, 0, 0.25);
             cursor: pointer;
             overflow: hidden;
             transition: all 0.3s ease;
         }
 
         .timeline-card:hover {
-            border-color: #0ff;
+            border-color: var(--color-secondary);
             transform: translateX(5px);
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
         }
@@ -213,14 +217,14 @@
             justify-content: space-between;
             align-items: baseline;
             padding: 14px 18px 6px 18px;
-            border-bottom: 1px dashed rgba(0,255,255,0.2);
+            border-bottom: 1px dashed rgba(255, 102, 0, 0.25);
             gap: 8px;
         }
 
         .year {
             font-size: 1.4rem;
             font-weight: 800;
-            background: linear-gradient(145deg, #fff, #70f0ff);
+            background: linear-gradient(145deg, #fff, var(--color-primary));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -237,7 +241,7 @@
             padding: 3px 10px;
             border-radius: 60px;
             font-size: 0.6rem;
-            border-left: 2px solid cyan;
+            border-left: 2px solid var(--color-secondary);
         }
 
         .card-content {
@@ -252,7 +256,7 @@
 
         .expand-icon {
             margin-top: 10px;
-            color: #0ff;
+            color: var(--color-secondary);
             font-size: 0.75rem;
             cursor: pointer;
             display: inline-flex;
@@ -264,7 +268,7 @@
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.4s ease-out;
-            background: rgba(0, 50, 70, 0.3);
+            background: rgba(255, 102, 0, 0.06);
             border-radius: 14px;
             margin-top: 10px;
         }
@@ -284,7 +288,7 @@
         .media-resource {
             margin-top: 12px;
             padding-top: 10px;
-            border-top: 1px dashed rgba(0,255,255,0.3);
+            border-top: 1px dashed rgba(255, 102, 0, 0.35);
         }
         
         .media-link {
@@ -335,38 +339,38 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: linear-gradient(95deg, #0a2e3a, #001e2a);
-            border: 1px solid #0ff;
+            background: linear-gradient(95deg, #0a0a2e, #0d0d25);
+            border: 1px solid var(--color-secondary);
             border-radius: 40px;
             padding: 6px 14px;
             font-size: 0.7rem;
             font-weight: 600;
             cursor: pointer;
             transition: 0.2s;
-            color: #0ff;
+            color: var(--color-secondary);
         }
 
         .ar-mini-btn:hover {
-            background: #0ff;
-            color: black;
-            box-shadow: 0 0 12px cyan;
+            background: var(--color-secondary);
+            color: #000;
+            box-shadow: 0 0 12px var(--color-secondary);
         }
 
-        /* AR Panel Móvil */
         .ar-panel {
             position: fixed;
             bottom: 15px;
             left: 15px;
             right: 15px;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(10, 10, 31, 0.92);
             backdrop-filter: blur(16px);
             border-radius: 60px;
             padding: 10px 16px;
-            border: 1px solid cyan;
+            border: 1px solid rgba(255, 102, 0, 0.5);
             display: flex;
             justify-content: space-around;
             gap: 8px;
             z-index: 1000;
+            box-shadow: 0 0 18px rgba(255, 102, 0, 0.2);
         }
 
         .ar-panel button {
@@ -383,11 +387,12 @@
             border-radius: 40px;
             flex: 1;
             justify-content: center;
+            font-family: 'Inter', sans-serif;
         }
 
         .ar-panel button:hover {
-            background: rgba(0, 255, 255, 0.2);
-            color: cyan;
+            background: rgba(255, 102, 0, 0.2);
+            color: var(--color-primary);
         }
 
         /* Modal */
@@ -414,34 +419,37 @@
         }
 
         .modal-content {
-            background: #0b162ae6;
-            border: 1.5px solid cyan;
+            background: rgba(26, 26, 48, 0.96);
+            border: 1.5px solid var(--color-primary);
             border-radius: 30px;
             max-width: 500px;
             width: 90%;
             padding: 24px;
             text-align: center;
-            box-shadow: 0 0 40px rgba(0, 255, 255, 0.4);
+            box-shadow: 0 0 40px rgba(255, 102, 0, 0.35);
         }
 
         .modal-content h3 {
             font-size: 1.3rem;
             margin-bottom: 12px;
+            color: var(--color-primary);
         }
-        
-        .modal-detail {
-            font-size: 0.85rem;
-            line-height: 1.5;
-        }
-        
+
         .close-modal {
-            background: cyan;
+            background: var(--color-primary);
             border: none;
             padding: 10px 22px;
             border-radius: 60px;
             font-weight: bold;
             margin-top: 15px;
             cursor: pointer;
+            color: var(--color-dark-bg);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .modal-detail {
+            font-size: 0.85rem;
+            line-height: 1.5;
         }
 
         @media (max-width: 600px) {
@@ -449,9 +457,6 @@
             .year { font-size: 1.2rem; }
             .milestone-name { font-size: 0.85rem; }
             .era-btn { padding: 6px 14px; font-size: 0.75rem; }
-            .vios-badge { width: 65px; height: 65px; top: 8px; right: 8px; }
-            .vios-badge span { font-size: 0.75rem; }
-            .vios-badge small { font-size: 0.6rem; }
             .ar-panel button { font-size: 0.6rem; flex-direction: column; gap: 3px; }
             .ar-panel button i { font-size: 1rem; }
         }
@@ -462,10 +467,9 @@
 <div class="grid-lines"></div>
 <div class="glow-orb"></div>
 
-<!-- VIOS ACADEMY BADGE -->
-<div class="vios-badge" onclick="window.open('https://viosacademy.com', '_blank')">
-    <span>VIOS</span>
-    <small>ACADEMY</small>
+<!-- VIOS ACADEMY LOGO -->
+<div class="vios-badge" onclick="window.open('https://viosacademy.com', '_blank')" title="VIOS ACADEMY">
+    <img src="./images/logo.png" alt="VIOS ACADEMY Logo">
 </div>
 
 <div class="hero">
