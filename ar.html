@@ -1,187 +1,176 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Visor AR · IA Timeline | VIOS ACADEMY</title>
-    <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --color-primary: #FF6600;
-            --color-secondary: #00FFFF;
-            --color-dark-bg: #0A0A1F;
-        }
-        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Visor AR · IA Timeline | VIOS ACADEMY</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --color-primary:   #FF6600;
+  --color-secondary: #00FFFF;
+  --color-dark-bg:   #0A0A1F;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-        html, body {
-            width:100%; height:100%;
-            background:var(--color-dark-bg);
-            font-family:'Inter', system-ui, sans-serif;
-            overflow:hidden;
-        }
+html, body {
+  width:100%; height:100%;
+  background:var(--color-dark-bg);
+  font-family:'Inter', system-ui, sans-serif;
+  overflow:hidden;
+}
 
-        /* ── VIDEO DE CÁMARA: capa base ── */
-        #cam-video {
-            position:fixed; top:0; left:0;
-            width:100%; height:100%;
-            object-fit:cover;
-            z-index:0;
-            display:none;
-            transform: scaleX(-1); /* espejo natural en cámara frontal, se corrige en trasera */
-        }
+/* ── CÁMARA + CANVAS ── */
+#cam-video {
+  position:fixed; top:0; left:0;
+  width:100%; height:100%;
+  object-fit:cover; z-index:0; display:none;
+}
+#threeCanvas {
+  position:fixed; top:0; left:0;
+  width:100%; height:100%;
+  z-index:1; display:none; background:transparent;
+}
 
-        /* ── ESCENA A-FRAME: sobre el video, fondo transparente ── */
-        #arScene {
-            position:fixed; top:0; left:0;
-            width:100vw; height:100vh;
-            z-index:1;
-            display:none;
-        }
-        /* Fondo transparente en el canvas WebGL */
-        #arScene canvas { background:transparent !important; }
+/* ── TOP BAR ── */
+#top-bar {
+  position:fixed; top:0; left:0; right:0;
+  background:linear-gradient(180deg, rgba(10,10,31,0.92) 0%, rgba(10,10,31,0.4) 100%);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(255,102,0,0.4);
+  padding:11px 76px 9px 16px;
+  z-index:9999;
+}
+#era-label { font-weight:700; font-size:0.78rem; color:#fff; letter-spacing:0.4px; }
+#era-label span { display:block; font-size:0.58rem; font-weight:400; color:rgba(255,255,255,0.6); margin-top:3px; }
 
-        /* ── UI: siempre por encima ── */
-        #top-bar {
-            position:fixed; top:0; left:0; right:0;
-            background:linear-gradient(180deg, rgba(10,10,31,0.92) 0%, rgba(10,10,31,0.4) 100%);
-            backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-            border-bottom:1px solid rgba(255, 102, 0, 0.4);
-            padding:11px 56px 9px 16px;
-            z-index:9999;
-        }
-        #era-label { font-weight:700; font-size:0.78rem; color:#fff; letter-spacing:0.4px; }
-        #era-label span { display:block; font-size:0.58rem; font-weight:400; color:rgba(255,255,255,0.6); margin-top:3px; }
+/* ── LOGO VIOS ACADEMY ── */
+.vios-tag {
+  position:fixed; top:10px; right:25px;
+  width:58px; height:58px;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; border:none; border-radius:50%;
+  box-shadow:none; z-index:9999; cursor:pointer;
+}
+.vios-tag img {
+  height:40px; width:auto; object-fit:contain;
+  filter:drop-shadow(0 0 5px rgba(255,102,0,0.9));
+}
 
-        /* VIOS LOGO - esquina superior derecha */
-        .vios-tag {
-            position:fixed; top:10px; right:25px;
-            width:58px; height:58px;
-            display:flex; align-items:center; justify-content:center;
-            background: transparent;
-            border: none;
-            border-radius: 50%;
-            box-shadow:none;
-            z-index:9999;
-            cursor: pointer;
-        }
+/* ── OVERLAY INICIO ── */
+#overlay {
+  position:fixed; inset:0;
+  background:rgba(10,10,31,0.97);
+  z-index:8000;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:28px; text-align:center;
+  transition:opacity 0.5s ease;
+}
+#overlay.fade-out { opacity:0; pointer-events:none; }
 
-        .vios-tag img {
-            height:40px; width:auto; object-fit:contain;
-            filter: drop-shadow(0 0 5px rgba(255,102,0,0.9));
-        }
+.ov-logo {
+  margin-bottom:18px;
+}
+.ov-logo img {
+  height:52px; width:auto;
+  filter:drop-shadow(0 0 8px rgba(255,102,0,0.8));
+}
 
-        /* ── OVERLAY INICIO ── */
-        #overlay {
-            position:fixed; inset:0;
-            background:rgba(10,10,31,0.97);
-            z-index:8000;
-            display:flex; flex-direction:column;
-            align-items:center; justify-content:center;
-            padding:28px; text-align:center;
-            transition:opacity 0.5s ease;
-        }
-        #overlay.fade-out { opacity:0; pointer-events:none; }
+.ov-icon  { font-size:3.2rem; margin-bottom:10px; }
+.ov-title { font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:8px; }
 
-        .ov-icon { font-size:3.6rem; margin-bottom:12px; }
-        .ov-title { font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:8px; }
+.era-chip {
+  display:inline-block; padding:7px 22px; border-radius:50px;
+  font-weight:700; font-size:0.82rem; border:2px solid;
+  margin-bottom:20px;
+}
+.chip-past    { border-color:#D2B48C; color:#D2B48C; background:rgba(210,180,140,0.1); }
+.chip-present { border-color:#00CCFF; color:#00CCFF; background:rgba(0,204,255,0.08); }
+.chip-future  { border-color:#CC00FF; color:#CC00FF; background:rgba(204,0,255,0.08); }
 
-        .era-chip {
-            display:inline-block; padding:7px 22px; border-radius:50px;
-            font-weight:700; font-size:0.82rem; border:2px solid;
-            margin-bottom:20px;
-        }
-        .chip-past    { border-color:#D2B48C; color:#D2B48C; background:rgba(210,180,140,0.1); }
-        .chip-present { border-color:#00CCFF; color:#00CCFF; background:rgba(0,204,255,0.08); }
-        .chip-future  { border-color:#CC00FF; color:#CC00FF; background:rgba(204,0,255,0.08); }
+.ov-sub {
+  font-size:0.77rem; color:rgba(255,255,255,0.6);
+  line-height:1.65; max-width:330px; margin-bottom:26px;
+}
 
-        .ov-sub {
-            font-size:0.77rem; color:rgba(255,255,255,0.6);
-            line-height:1.65; max-width:330px; margin-bottom:26px;
-        }
+#btn-start {
+  background:linear-gradient(135deg, var(--color-primary), #CC4400);
+  color:#fff; border:none; padding:14px 38px;
+  border-radius:50px; font-size:0.88rem; font-weight:700;
+  cursor:pointer; letter-spacing:0.5px;
+  box-shadow:0 0 22px rgba(255,102,0,0.5);
+  transition:transform 0.12s;
+  font-family:'Inter', sans-serif;
+}
+#btn-start:active   { transform:scale(0.96); }
+#btn-start:disabled { opacity:0.6; cursor:default; }
 
-        /* Previsualización del modelo */
-        .model-preview {
-            width:180px; height:180px;
-            border:1px solid rgba(255,255,255,0.12);
-            border-radius:16px;
-            margin-bottom:22px;
-            overflow:hidden;
-            background:rgba(255,255,255,0.04);
-        }
-        .model-preview canvas { width:100%!important; height:100%!important; }
+.ov-note { margin-top:14px; font-size:0.6rem; color:rgba(255,255,255,0.3); max-width:300px; line-height:1.5; }
 
-        #btn-start {
-            background:linear-gradient(135deg, var(--color-primary), #CC4400);
-            color:#fff; border:none; padding:14px 38px;
-            border-radius:50px; font-size:0.88rem; font-weight:700;
-            cursor:pointer; letter-spacing:0.5px;
-            box-shadow:0 0 22px rgba(255,102,0,0.5);
-            transition:transform 0.12s;
-            font-family:'Inter', sans-serif;
-        }
-        #btn-start:active { transform:scale(0.96); }
-        #btn-start:disabled { opacity:0.6; cursor:default; }
+/* ── ERROR PERMISOS ── */
+#perm-error {
+  position:fixed; inset:0; background:rgba(10,10,31,0.97);
+  z-index:9000; display:none; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:28px; text-align:center;
+}
+#perm-error.visible { display:flex; }
+#perm-error h2 { color:#ff5555; font-size:1.05rem; margin-bottom:12px; }
+#perm-error p  { color:rgba(255,255,255,0.65); font-size:0.78rem; line-height:1.65; max-width:340px; margin-bottom:24px; }
+#perm-error a  {
+  color:var(--color-secondary); border:1.5px solid var(--color-secondary);
+  background:rgba(0,255,255,0.08); padding:11px 26px;
+  border-radius:50px; text-decoration:none; font-weight:700; font-size:0.78rem;
+}
 
-        .ov-note { margin-top:14px; font-size:0.6rem; color:rgba(255,255,255,0.3); max-width:300px; line-height:1.5; }
+/* ── BOTÓN VOLVER ── */
+#back-btn {
+  position:fixed; bottom:22px; left:18px;
+  background:rgba(10,10,31,0.85); backdrop-filter:blur(10px);
+  border:1.5px solid rgba(255,102,0,0.65); color:var(--color-primary);
+  padding:11px 22px; border-radius:50px; font-size:0.76rem;
+  font-weight:700; text-decoration:none; z-index:9999;
+  display:flex; align-items:center; gap:7px;
+  transition:background 0.15s, color 0.15s;
+}
+#back-btn:active { background:var(--color-primary); color:#000; }
 
-        #perm-error {
-            position:fixed; inset:0; background:rgba(10,10,31,0.97);
-            z-index:9000; display:none; flex-direction:column;
-            align-items:center; justify-content:center;
-            padding:28px; text-align:center;
-        }
-        #perm-error.visible { display:flex; }
-        #perm-error h2 { color:#ff5555; font-size:1.05rem; margin-bottom:12px; }
-        #perm-error p { color:rgba(255,255,255,0.65); font-size:0.78rem; line-height:1.65; max-width:340px; margin-bottom:24px; }
-        #perm-error a {
-            color:var(--color-secondary); border:1.5px solid var(--color-secondary); background:rgba(0,255,255,0.08);
-            padding:11px 26px; border-radius:50px; text-decoration:none;
-            font-weight:700; font-size:0.78rem;
-        }
+/* ── ESTADO CÁMARA ── */
+#cam-status {
+  position:fixed; bottom:22px; right:18px;
+  background:rgba(0,0,0,0.65); border-radius:50px;
+  padding:7px 13px; font-size:0.58rem; color:rgba(255,255,255,0.55);
+  z-index:9999; display:flex; align-items:center; gap:6px;
+}
+.dot { width:7px; height:7px; border-radius:50%; background:#555; flex-shrink:0; transition:background 0.3s; }
+.dot.on { background:#00ff88; box-shadow:0 0 5px #00ff88; }
 
-        #back-btn {
-            position:fixed; bottom:22px; left:18px;
-            background:rgba(10,10,31,0.85); backdrop-filter:blur(10px);
-            border:1.5px solid rgba(255,102,0,0.65); color:var(--color-primary);
-            padding:11px 22px; border-radius:50px; font-size:0.76rem;
-            font-weight:700; text-decoration:none; z-index:9999;
-            display:flex; align-items:center; gap:7px;
-            transition:background 0.15s, color 0.15s;
-        }
-        #back-btn:active { background:var(--color-primary); color:#000; }
+/* ── AVISO HTTPS ── */
+#https-warn {
+  position:fixed; bottom:70px; left:50%; transform:translateX(-50%);
+  background:rgba(255,170,0,0.93); color:#000; padding:8px 18px;
+  border-radius:22px; font-size:0.65rem; font-weight:700;
+  z-index:9999; display:none; text-align:center; max-width:320px;
+  opacity:1; transition:opacity 1s;
+}
 
-        #cam-status {
-            position:fixed; bottom:22px; right:18px;
-            background:rgba(0,0,0,0.65); border-radius:50px;
-            padding:7px 13px; font-size:0.58rem; color:rgba(255,255,255,0.55);
-            z-index:9999; display:flex; align-items:center; gap:6px;
-        }
-        .dot { width:7px; height:7px; border-radius:50%; background:#555; flex-shrink:0; transition:background 0.3s; }
-        .dot.on { background:#00ff88; box-shadow:0 0 5px #00ff88; }
+/* ── HINT ROTACIÓN ── */
+#ar-hint {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  color:rgba(255,255,255,0.35); font-size:0.7rem;
+  pointer-events:none; z-index:2; display:none;
+  text-align:center; line-height:1.8;
+}
+#ar-hint.show { display:block; }
 
-        #https-warn {
-            position:fixed; bottom:70px; left:50%; transform:translateX(-50%);
-            background:rgba(255,170,0,0.93); color:#000; padding:8px 18px;
-            border-radius:22px; font-size:0.65rem; font-weight:700;
-            z-index:9999; text-align:center; max-width:320px;
-            opacity:1; transition:opacity 1s; display:none;
-        }
-
-        /* Hint táctil AR activo */
-        #ar-hint {
-            position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-            color:rgba(255,255,255,0.35); font-size:0.7rem;
-            pointer-events:none; z-index:2; display:none;
-            text-align:center; line-height:1.8;
-        }
-        #ar-hint.show { display:block; }
-
-        @media (max-width:600px) {
-            .ov-title { font-size:0.96rem; }
-            #btn-start { padding:12px 30px; font-size:0.82rem; }
-        }
-    </style>
+@media (max-width:600px) {
+  .ov-title   { font-size:0.96rem; }
+  #btn-start  { padding:12px 30px; font-size:0.82rem; }
+  .vios-tag   { top:8px; right:10px; width:48px; height:48px; }
+  .vios-tag img { height:34px; }
+}
+</style>
 </head>
 <body>
 
@@ -192,549 +181,614 @@
      OVERLAY DE INICIO
 ═══════════════════════════════════════ -->
 <div id="overlay">
-    <div class="ov-icon"  id="ov-icon">🧠</div>
-    <div class="ov-title" id="ov-title">Realidad Aumentada · IA</div>
-    <div class="era-chip" id="ov-chip">⚡ PRESENTE IA</div>
-    <div class="ov-sub" id="ov-desc">
-        Se activará tu cámara. El modelo 3D aparecerá sobre la imagen en vivo.<br><br>
-        <strong style="color:#fff">Mueve el dispositivo</strong> para explorar el objeto desde distintos ángulos.
-    </div>
-    <button id="btn-start">📷 Activar cámara AR</button>
-    <p class="ov-note">El acceso a la cámara es local. Ningún dato sale del dispositivo.</p>
+  <div class="ov-logo">
+    <img src="./images/logo.png" alt="VIOS ACADEMY">
+  </div>
+  <div class="ov-icon"  id="ov-icon">🧠</div>
+  <div class="ov-title" id="ov-title">Realidad Aumentada · IA</div>
+  <div class="era-chip" id="ov-chip">⚡ PRESENTE IA</div>
+  <div class="ov-sub"   id="ov-desc">
+    Se activará tu cámara. El modelo 3D aparecerá sobre la imagen en vivo.<br><br>
+    <strong style="color:#fff">Mueve el dispositivo</strong> para explorar el objeto desde distintos ángulos.
+  </div>
+  <button id="btn-start">📷 Activar cámara AR</button>
+  <p class="ov-note">El acceso a la cámara es local. Ningún dato sale del dispositivo.</p>
 </div>
 
 <!-- ══════════════════════════════════════
      ERROR PERMISOS
 ═══════════════════════════════════════ -->
 <div id="perm-error">
-    <h2>❌ Sin acceso a la cámara</h2>
-    <p>
-        ① Usa Chrome, Firefox o Safari actualizado<br>
-        ② La página debe estar en <strong style="color:#0ff">HTTPS</strong> o <strong style="color:#0ff">localhost</strong><br>
-        ③ Pulsa "Permitir" cuando el navegador lo solicite
-    </p>
-    <a href="index.html">← Volver a la línea del tiempo</a>
+  <h2>❌ Sin acceso a la cámara</h2>
+  <p>
+    ① Usa Chrome, Firefox o Safari actualizado<br>
+    ② La página debe estar en <strong style="color:var(--color-secondary)">HTTPS</strong>
+       o <strong style="color:var(--color-secondary)">localhost</strong><br>
+    ③ Pulsa "Permitir" cuando el navegador lo solicite
+  </p>
+  <a href="index.html">← Volver a la línea del tiempo</a>
 </div>
 
-<!-- UI persistente -->
+<!-- ══ UI PERSISTENTE ══ -->
 <div id="top-bar">
-    <div id="era-label">🧠 REALIDAD AUMENTADA<span id="era-sub">Iniciando…</span></div>
+  <div id="era-label">🧠 REALIDAD AUMENTADA<span id="era-sub">Iniciando…</span></div>
 </div>
-<div class="vios-tag" onclick="window.open('https://viosacademy-collab.github.io/vios-academy-web/','_blank')" title="VIOS ACADEMY">
-    <img src="./images/logo.png" alt="VIOS ACADEMY Logo">
+
+<!-- Logo VIOS - esquina superior derecha -->
+<div class="vios-tag"
+     onclick="window.open('https://viosacademy-collab.github.io/vios-academy-web/','_blank')"
+     title="VIOS ACADEMY">
+  <img src="./images/logo.png" alt="VIOS ACADEMY Logo">
 </div>
+
 <a href="index.html" id="back-btn">← Volver</a>
 <div id="cam-status"><div class="dot" id="cam-dot"></div><span id="cam-txt">Cámara inactiva</span></div>
 
 <!-- Hint rotación -->
 <div id="ar-hint">↕ Mueve el dispositivo para explorar<br>el modelo en 360°</div>
 
-<!-- Video cámara (fondo real) -->
+<!-- ══ VIDEO CÁMARA (fondo real) ══ -->
 <video id="cam-video" autoplay playsinline muted></video>
 
-<!-- ══════════════════════════════════════
-     ESCENA A-FRAME
-═══════════════════════════════════════ -->
-<a-scene
-    id="arScene"
-    embedded
-    vr-mode-ui="enabled:false"
-    renderer="antialias:true; logarithmicDepthBuffer:true; alpha:true; colorManagement:true;"
-    loading-screen="enabled:false"
->
-    <!-- Cámara con look-controls (giroscopio + arrastrar) -->
-    <a-camera id="main-cam" position="0 1.6 0"
-        look-controls="enabled:true; touchEnabled:true; magicWindowTrackingEnabled:true;"
-        wasd-controls="enabled:false">
-    </a-camera>
+<!-- ══ CANVAS THREE.JS ══ -->
+<canvas id="threeCanvas"></canvas>
 
-    <!-- Luces globales -->
-    <a-light type="ambient"     color="#ffffff" intensity="0.8"></a-light>
-    <a-light type="directional" position="3 5 4"  color="#ffffff" intensity="0.6"></a-light>
-    <a-light type="point"       position="0 3 0"  color="#aaddff" intensity="0.5" distance="8"></a-light>
-    <a-light type="point"       position="-2 1 2" color="#ffaa55" intensity="0.3" distance="6"></a-light>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         ■ PASADO (1950–2011)
-           ESCENA: Test de Turing
-           – Alan Turing (persona A) a la izquierda
-           – Evaluador (persona B) a la derecha
-           – Pantalla/terminal en el centro separándolos
-           – Cables y preguntas flotando
-         ═══════════════════════════════════════════════════════════════ -->
-    <a-entity id="obj-pasado" visible="false" position="0 0.2 -2.5">
-        <a-entity scale="0.42 0.42 0.42">
-
-            <!-- == BASE: sala de experimento == -->
-            <!-- Suelo -->
-            <a-box position="0 -0.08 0" width="5.5" height="0.12" depth="3.5" color="#2a1f0f" metalness="0.1" roughness="0.9"></a-box>
-            <!-- Borde de suelo -->
-            <a-box position="0 -0.02 0" width="5.3" height="0.04" depth="3.3" color="#3a2a10" roughness="0.95"></a-box>
-
-            <!-- == MAMPARA CENTRAL: panel divisor (la "pared" del experimento Turing) == -->
-            <!-- Panel principal -->
-            <a-box position="0 1.1 0" width="0.12" height="2.4" depth="2.8" color="#1a1a2e"></a-box>
-            <!-- Borde metálico del panel -->
-            <a-box position="0 1.1 0" width="0.16" height="2.44" depth="0.12" color="#444" metalness="0.7"
-                rotation="0 0 0"></a-box>
-            <!-- Marco superior del panel -->
-            <a-box position="0 2.35 0" width="0.2" height="0.1" depth="2.9" color="#555" metalness="0.8"></a-box>
-
-            <!-- VENTANILLA / pantalla en el panel -->
-            <a-box position="0 1.3 0" width="0.06" height="0.85" depth="1.1" color="#001a33"></a-box>
-            <!-- Luz verde de la pantalla (parpadeo) -->
-            <a-box position="0 1.3 0.01" width="0.04" height="0.8" depth="1.05" color="#003300" emissive="#00ff00" emissive-intensity="0.18">
-                <a-animation attribute="material.emissive-intensity" dur="2500" direction="alternate" repeat="indefinite" from="0.18" to="0.08"></a-animation>
-            </a-box>
-
-            <!-- TEXTO EN PANTALLA (líneas de código) -->
-            <a-text value="¿Es usted humano?" position="0 1.6 0.62"  align="center" width="3.5" color="#00FF66" scale="0.55 0.55 0.55"></a-text>
-            <a-text value="> Soy una máquina." position="0 1.35 0.62" align="center" width="3.5" color="#00CC44" scale="0.48 0.48 0.48"></a-text>
-            <a-text value="> Demuéstrelo."     position="0 1.12 0.62" align="center" width="3.5" color="#00AA33" scale="0.45 0.45 0.45"></a-text>
-
-
-            <!-- ══ FIGURA A: TURING (izquierda) ══ -->
-            <a-entity position="-1.55 0 0">
-                <!-- Cabeza -->
-                <a-sphere position="0 2.02 0" radius="0.28" color="#F5CBA7" metalness="0.0"></a-sphere>
-                <!-- Cabello oscuro -->
-                <a-sphere position="0 2.22 0" radius="0.26" color="#3b2008" scale="1 0.5 1"></a-sphere>
-                <!-- Ojo izquierdo -->
-                <a-sphere position="-0.1 2.05 0.23" radius="0.045" color="#1a1a1a"></a-sphere>
-                <!-- Ojo derecho -->
-                <a-sphere position="0.1 2.05 0.23" radius="0.045" color="#1a1a1a"></a-sphere>
-                <!-- Cuerpo: chaqueta oscura -->
-                <a-cylinder position="0 1.25 0" radius="0.32" height="1.0" color="#1c1c3c" metalness="0.0"></a-cylinder>
-                <!-- Camisa blanca (cuello) -->
-                <a-box position="0 1.68 0.22" width="0.22" height="0.28" depth="0.06" color="#f0f0f0"></a-box>
-                <!-- Corbata -->
-                <a-box position="0 1.55 0.26" width="0.08" height="0.4" depth="0.04" color="#8B0000"></a-box>
-                <!-- Piernas -->
-                <a-cylinder position="-0.12 0.36 0" radius="0.14" height="0.9" color="#2a2a4a"></a-cylinder>
-                <a-cylinder position="0.12 0.36 0"  radius="0.14" height="0.9" color="#2a2a4a"></a-cylinder>
-                <!-- Zapatos -->
-                <a-box position="-0.12 -0.1 0.08" width="0.2" height="0.12" depth="0.35" color="#111"></a-box>
-                <a-box position="0.12 -0.1 0.08"  width="0.2" height="0.12" depth="0.35" color="#111"></a-box>
-                <!-- Brazo derecho (hacia la mampara) -->
-                <a-cylinder position="0.42 1.35 0.3" radius="0.1" height="0.7" color="#1c1c3c" rotation="0 0 -55"></a-cylinder>
-                <!-- Mano izquierda -->
-                <a-sphere position="-0.42 1.25 0" radius="0.1" color="#F5CBA7"></a-sphere>
-                <!-- Etiqueta -->
-                <a-text value="ALAN TURING" position="0 2.55 0" align="center" width="3" color="#D2B48C" scale="0.7 0.7 0.7"></a-text>
-            </a-entity>
-
-
-            <!-- ══ FIGURA B: EVALUADOR (derecha) ══ -->
-            <a-entity position="1.55 0 0">
-                <!-- Cabeza -->
-                <a-sphere position="0 2.02 0" radius="0.28" color="#FDEBD0" metalness="0.0"></a-sphere>
-                <!-- Cabello -->
-                <a-sphere position="0 2.22 0" radius="0.26" color="#5d3a1a" scale="1 0.45 1"></a-sphere>
-                <!-- Ojos -->
-                <a-sphere position="-0.1 2.05 0.23" radius="0.045" color="#222"></a-sphere>
-                <a-sphere position="0.1  2.05 0.23" radius="0.045" color="#222"></a-sphere>
-                <!-- Cuerpo: americana gris -->
-                <a-cylinder position="0 1.25 0" radius="0.32" height="1.0" color="#4a4a4a" metalness="0.0"></a-cylinder>
-                <!-- Camisa -->
-                <a-box position="0 1.68 0.22" width="0.22" height="0.28" depth="0.06" color="#eee"></a-box>
-                <!-- Carpeta en la mano (evaluador toma notas) -->
-                <a-box position="0.5 1.3 0.3" width="0.32" height="0.42" depth="0.04" color="#8B4513"></a-box>
-                <a-box position="0.5 1.3 0.32" width="0.28" height="0.38" depth="0.02" color="#fffff0"></a-box>
-                <!-- Piernas -->
-                <a-cylinder position="-0.12 0.36 0" radius="0.14" height="0.9" color="#3a3a3a"></a-cylinder>
-                <a-cylinder position="0.12 0.36 0"  radius="0.14" height="0.9" color="#3a3a3a"></a-cylinder>
-                <a-box position="-0.12 -0.1 0.08" width="0.2" height="0.12" depth="0.35" color="#111"></a-box>
-                <a-box position="0.12 -0.1 0.08"  width="0.2" height="0.12" depth="0.35" color="#111"></a-box>
-                <!-- Etiqueta -->
-                <a-text value="EVALUADOR" position="0 2.55 0" align="center" width="3" color="#D2B48C" scale="0.7 0.7 0.7"></a-text>
-            </a-entity>
-
-
-            <!-- == PREGUNTAS FLOTANTES ANIMADAS == -->
-            <!-- Burbuja 1 -->
-            <a-entity position="-1.8 2.9 0.3">
-                <a-box width="1.8" height="0.45" depth="0.06" color="#001a33" opacity="0.85" border-radius="0.1"></a-box>
-                <a-text value="¿Puede pensar una máquina?" position="0 0 0.04" align="center" width="3.2" color="#00FF99" scale="0.55 0.55 0.55"></a-text>
-                <a-animation attribute="position" dur="3000" direction="alternate" repeat="indefinite" from="-1.8 2.9 0.3" to="-1.8 3.15 0.3"></a-animation>
-            </a-entity>
-            <!-- Burbuja 2 -->
-            <a-entity position="1.7 2.75 0.3">
-                <a-box width="1.5" height="0.45" depth="0.06" color="#1a0033" opacity="0.85"></a-box>
-                <a-text value="Turing Test · 1950" position="0 0 0.04" align="center" width="3" color="#AA88FF" scale="0.55 0.55 0.55"></a-text>
-                <a-animation attribute="position" dur="2600" direction="alternate" repeat="indefinite" from="1.7 2.75 0.3" to="1.7 2.98 0.3"></a-animation>
-            </a-entity>
-
-            <!-- == ETIQUETAS ERA == -->
-            <a-text value="PASADO DE LA IA · 1950–2011" position="0 3.6 0" align="center" width="8" color="#D2B48C"></a-text>
-            <a-text value="Turing · ELIZA · Deep Blue · Watson" position="0 -0.35 0" align="center" width="7" scale="0.55 0.55 0.55" color="#aaaaaa"></a-text>
-        </a-entity>
-
-        <!-- Flotación y giro suave -->
-        <a-animation attribute="position" dur="4000" direction="alternate" repeat="indefinite" from="0 0.2 -2.5" to="0 0.35 -2.5"></a-animation>
-        <a-animation attribute="rotation" dur="28000" repeat="indefinite" to="0 360 0"></a-animation>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         ■ PRESENTE (2012–2025)
-           ESCENA: Red neuronal — estructura tipo átomo
-           – Núcleo central brillante
-           – 3 anillos orbitales en ejes X, Y, Z
-           – 12 nodos esféricos (neuronas) en las órbitas
-           – Conexiones/líneas entre nodos centrales
-         ═══════════════════════════════════════════════════════════════ -->
-    <a-entity id="obj-presente" visible="false" position="0 1.0 -2.5">
-        <a-entity scale="0.55 0.55 0.55">
-
-            <!-- == NÚCLEO: chip / cerebro IA == -->
-            <!-- Capa exterior (wireframe) -->
-            <a-sphere position="0 0 0" radius="0.52" color="#00CCFF" wireframe="true" emissive="#003366" emissive-intensity="0.5">
-                <a-animation attribute="rotation" dur="9000" repeat="indefinite" to="0 360 0"></a-animation>
-            </a-sphere>
-            <!-- Capa media sólida -->
-            <a-sphere position="0 0 0" radius="0.36" color="#0088FF" emissive="#0044AA" emissive-intensity="0.7" metalness="0.8">
-                <a-animation attribute="rotation" dur="6000" repeat="indefinite" to="360 0 360"></a-animation>
-            </a-sphere>
-            <!-- Núcleo pulsante -->
-            <a-sphere position="0 0 0" radius="0.18" color="#FFFFFF" emissive="#88DDFF" emissive-intensity="1.2">
-                <a-animation attribute="scale" dur="1600" direction="alternate" repeat="indefinite" from="1 1 1" to="1.25 1.25 1.25"></a-animation>
-            </a-sphere>
-
-            <!-- == ANILLO ORBITAL 1: eje Y (horizontal) == -->
-            <a-torus position="0 0 0" radius="1.3" radius-tubular="0.025" color="#00FFcc" rotation="0 0 0">
-                <a-animation attribute="rotation" dur="5000" repeat="indefinite" to="0 360 0"></a-animation>
-            </a-torus>
-            <!-- == ANILLO ORBITAL 2: eje X (vertical) == -->
-            <a-torus position="0 0 0" radius="1.3" radius-tubular="0.025" color="#FF6600" rotation="90 0 0">
-                <a-animation attribute="rotation" dur="6500" repeat="indefinite" to="360 0 0"></a-animation>
-            </a-torus>
-            <!-- == ANILLO ORBITAL 3: eje diagonal == -->
-            <a-torus position="0 0 0" radius="1.3" radius-tubular="0.025" color="#FFCC00" rotation="55 30 0">
-                <a-animation attribute="rotation" dur="7500" repeat="indefinite" to="360 360 0"></a-animation>
-            </a-torus>
-            <!-- Anillo exterior decorativo -->
-            <a-torus position="0 0 0" radius="1.7" radius-tubular="0.015" color="#9966FF" opacity="0.5" rotation="20 45 0">
-                <a-animation attribute="rotation" dur="12000" repeat="indefinite" to="0 0 360"></a-animation>
-            </a-torus>
-
-            <!-- == NODOS ESFÉRICOS (neuronas) en posiciones de órbita == -->
-            <!-- Órbita horizontal (anillo 1) — 4 nodos -->
-            <a-sphere radius="0.12" color="#00FFCC" emissive="#00FFCC" emissive-intensity="0.8" position="1.3 0 0">
-                <a-animation attribute="scale" dur="1800" direction="alternate" repeat="indefinite" from="1 1 1" to="1.4 1.4 1.4"></a-animation>
-            </a-sphere>
-            <a-sphere radius="0.12" color="#00FFCC" emissive="#00FFCC" emissive-intensity="0.8" position="-1.3 0 0">
-                <a-animation attribute="scale" dur="2100" direction="alternate" repeat="indefinite" from="1 1 1" to="1.3 1.3 1.3"></a-animation>
-            </a-sphere>
-            <a-sphere radius="0.1"  color="#00DDAA" emissive="#00DDAA" emissive-intensity="0.6" position="0 0 1.3">
-                <a-animation attribute="scale" dur="1500" direction="alternate" repeat="indefinite" from="1 1 1" to="1.35 1.35 1.35"></a-animation>
-            </a-sphere>
-            <a-sphere radius="0.1"  color="#00DDAA" emissive="#00DDAA" emissive-intensity="0.6" position="0 0 -1.3">
-                <a-animation attribute="scale" dur="2300" direction="alternate" repeat="indefinite" from="1 1 1" to="1.3 1.3 1.3"></a-animation>
-            </a-sphere>
-            <!-- Órbita vertical (anillo 2) — 4 nodos -->
-            <a-sphere radius="0.12" color="#FF6600" emissive="#FF6600" emissive-intensity="0.8" position="0 1.3 0">
-                <a-animation attribute="scale" dur="1700" direction="alternate" repeat="indefinite" from="1 1 1" to="1.4 1.4 1.4"></a-animation>
-            </a-sphere>
-            <a-sphere radius="0.12" color="#FF6600" emissive="#FF6600" emissive-intensity="0.8" position="0 -1.3 0">
-                <a-animation attribute="scale" dur="2000" direction="alternate" repeat="indefinite" from="1 1 1" to="1.35 1.35 1.35"></a-animation>
-            </a-sphere>
-            <a-sphere radius="0.1"  color="#FF8833" emissive="#FF8833" emissive-intensity="0.6" position="0.9 0.9 0">
-                <a-animation attribute="scale" dur="1400" direction="alternate" repeat="indefinite" from="1 1 1" to="1.3 1.3 1.3"></a-animation>
-            </a-sphere>
-            <a-sphere radius="0.1"  color="#FF8833" emissive="#FF8833" emissive-intensity="0.6" position="-0.9 -0.9 0">
-                <a-animation attribute="scale" dur="2200" direction="alternate" repeat="indefinite" from="1 1 1" to="1.25 1.25 1.25"></a-animation>
-            </a-sphere>
-            <!-- Órbita diagonal (anillo 3) — 4 nodos -->
-            <a-sphere radius="0.11" color="#FFCC00" emissive="#FFCC00" emissive-intensity="0.8" position="0.92 0 0.92">
-                <a-animation attribute="scale" dur="1900" direction="alternate" repeat="indefinite" from="1 1 1" to="1.38 1.38 1.38"></a-animation>
-            </a-sphere>
-            <a-sphere radius="0.11" color="#FFCC00" emissive="#FFCC00" emissive-intensity="0.8" position="-0.92 0 -0.92">
-                <a-animation attribute="scale" dur="1650" direction="alternate" repeat="indefinite" from="1 1 1" to="1.35 1.35 1.35"></a-animation>
-            </a-sphere>
-            <a-sphere radius="0.09" color="#FFAA00" emissive="#FFAA00" emissive-intensity="0.5" position="0.92 0 -0.92">
-                <a-animation attribute="scale" dur="2400" direction="alternate" repeat="indefinite" from="1 1 1" to="1.28 1.28 1.28"></a-animation>
-            </a-sphere>
-            <a-sphere radius="0.09" color="#FFAA00" emissive="#FFAA00" emissive-intensity="0.5" position="-0.92 0 0.92">
-                <a-animation attribute="scale" dur="2700" direction="alternate" repeat="indefinite" from="1 1 1" to="1.25 1.25 1.25"></a-animation>
-            </a-sphere>
-
-            <!-- == ETIQUETA == -->
-            <a-text value="PRESENTE DE LA IA · 2012–2025" position="0 2.3 0" align="center" width="8" color="#FFAA44"></a-text>
-            <a-text value="Red Neuronal · Deep Learning · Transformers · ChatGPT" position="0 -2.05 0" align="center" width="8" scale="0.55 0.55 0.55" color="#FFD966"></a-text>
-        </a-entity>
-
-        <a-animation attribute="position" dur="3800" direction="alternate" repeat="indefinite" from="0 1.0 -2.5" to="0 1.18 -2.5"></a-animation>
-        <a-animation attribute="rotation" dur="32000" repeat="indefinite" to="0 360 0"></a-animation>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         ■ FUTURO (2026–2050+)
-           ESCENA: Robot humanoide (AGI/ASI)
-           – Torso articulado
-           – Cabeza con visor holográfico
-           – Brazos y manos detalladas
-           – Halo / aura de energía orbital
-         ═══════════════════════════════════════════════════════════════ -->
-    <a-entity id="obj-futuro" visible="false" position="0 0.1 -2.5">
-        <a-entity scale="0.45 0.45 0.45">
-
-            <!-- == BASE: plataforma de energía == -->
-            <a-cylinder position="0 -0.06 0" radius="1.2" height="0.1" color="#0a0a14" metalness="0.98"></a-cylinder>
-            <!-- Portal de energía en la base -->
-            <a-torus position="0 0 0" radius="1.1" radius-tubular="0.032" color="#CC00FF" rotation="90 0 0" emissive="#8800AA" emissive-intensity="0.7">
-                <a-animation attribute="rotation" dur="5000" repeat="indefinite" from="90 0 0" to="90 360 0"></a-animation>
-            </a-torus>
-            <a-torus position="0 0 0" radius="0.78" radius-tubular="0.022" color="#FF44FF" rotation="90 20 0" emissive="#AA00AA" emissive-intensity="0.5">
-                <a-animation attribute="rotation" dur="3800" repeat="indefinite" from="90 20 0" to="90 380 0"></a-animation>
-            </a-torus>
-
-            <!-- == PIERNAS == -->
-            <!-- Cadera -->
-            <a-box position="0 0.55 0" width="0.78" height="0.22" depth="0.5" color="#1a1a3a" metalness="0.8"></a-box>
-            <!-- Pierna izquierda -->
-            <a-cylinder position="-0.25 0.22 0" radius="0.13" height="0.62" color="#222244" metalness="0.75"></a-cylinder>
-            <a-cylinder position="-0.25 -0.16 0" radius="0.11" height="0.55" color="#1a1a3a" metalness="0.8"></a-cylinder>
-            <!-- Pie izquierdo -->
-            <a-box position="-0.25 -0.49 0.1" width="0.24" height="0.1" depth="0.42" color="#111133" metalness="0.9"></a-box>
-            <!-- Pierna derecha -->
-            <a-cylinder position="0.25 0.22 0" radius="0.13" height="0.62" color="#222244" metalness="0.75"></a-cylinder>
-            <a-cylinder position="0.25 -0.16 0" radius="0.11" height="0.55" color="#1a1a3a" metalness="0.8"></a-cylinder>
-            <!-- Pie derecho -->
-            <a-box position="0.25 -0.49 0.1" width="0.24" height="0.1" depth="0.42" color="#111133" metalness="0.9"></a-box>
-
-            <!-- == TORSO == -->
-            <a-box position="0 1.18 0" width="0.82" height="0.88" depth="0.55" color="#1e1e40" metalness="0.85" roughness="0.25"></a-box>
-            <!-- Panel pectoral con luz -->
-            <a-box position="0 1.28 0.28" width="0.52" height="0.42" depth="0.06" color="#0a0a22" metalness="0.9"></a-box>
-            <a-box position="0 1.28 0.3" width="0.44" height="0.34" depth="0.04" color="#000033" emissive="#0033ff" emissive-intensity="0.5">
-                <a-animation attribute="material.emissive-intensity" dur="2000" direction="alternate" repeat="indefinite" from="0.5" to="0.15"></a-animation>
-            </a-box>
-            <!-- Líneas de energía en el torso -->
-            <a-box position="-0.2 1.18 0.3" width="0.04" height="0.7" depth="0.02" color="#00FFFF" emissive="#00FFFF" emissive-intensity="0.7">
-                <a-animation attribute="material.emissive-intensity" dur="1800" direction="alternate" repeat="indefinite" from="0.7" to="0.15"></a-animation>
-            </a-box>
-            <a-box position="0.2 1.18 0.3" width="0.04" height="0.7" depth="0.02" color="#00FFFF" emissive="#00FFFF" emissive-intensity="0.7">
-                <a-animation attribute="material.emissive-intensity" dur="2200" direction="alternate" repeat="indefinite" from="0.7" to="0.12"></a-animation>
-            </a-box>
-            <!-- Hombros -->
-            <a-sphere position="-0.52 1.56 0" radius="0.2" color="#2a2a50" metalness="0.9"></a-sphere>
-            <a-sphere position="0.52 1.56 0"  radius="0.2" color="#2a2a50" metalness="0.9"></a-sphere>
-
-            <!-- == BRAZO IZQUIERDO == -->
-            <a-cylinder position="-0.72 1.22 0" radius="0.11" height="0.72" color="#222244" metalness="0.8" rotation="0 0 12"></a-cylinder>
-            <!-- Codo -->
-            <a-sphere position="-0.87 0.88 0" radius="0.13" color="#2a2a50" metalness="0.85"></a-sphere>
-            <!-- Antebrazo -->
-            <a-cylinder position="-0.95 0.58 0" radius="0.095" height="0.58" color="#1e1e40" metalness="0.8" rotation="0 0 8"></a-cylinder>
-            <!-- Mano / garra -->
-            <a-sphere position="-1.0 0.28 0" radius="0.14" color="#222244" metalness="0.88"></a-sphere>
-            <!-- Dedos -->
-            <a-cylinder position="-1.0 0.1 0.08"  radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="10 0 0"></a-cylinder>
-            <a-cylinder position="-1.08 0.1 0.02" radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="8 0 -5"></a-cylinder>
-            <a-cylinder position="-0.92 0.1 0.02" radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="8 0 5"></a-cylinder>
-
-            <!-- == BRAZO DERECHO == -->
-            <a-cylinder position="0.72 1.22 0" radius="0.11" height="0.72" color="#222244" metalness="0.8" rotation="0 0 -12"></a-cylinder>
-            <a-sphere position="0.87 0.88 0" radius="0.13" color="#2a2a50" metalness="0.85"></a-sphere>
-            <a-cylinder position="0.95 0.58 0" radius="0.095" height="0.58" color="#1e1e40" metalness="0.8" rotation="0 0 -8"></a-cylinder>
-            <a-sphere position="1.0 0.28 0" radius="0.14" color="#222244" metalness="0.88"></a-sphere>
-            <a-cylinder position="1.0 0.1 0.08"  radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="10 0 0"></a-cylinder>
-            <a-cylinder position="1.08 0.1 0.02" radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="8 0 5"></a-cylinder>
-            <a-cylinder position="0.92 0.1 0.02" radius="0.03" height="0.2" color="#1a1a3a" metalness="0.9" rotation="8 0 -5"></a-cylinder>
-
-            <!-- == CUELLO == -->
-            <a-cylinder position="0 1.72 0" radius="0.14" height="0.26" color="#1e1e40" metalness="0.85"></a-cylinder>
-
-            <!-- == CABEZA == -->
-            <a-box position="0 2.12 0" width="0.65" height="0.62" depth="0.58" color="#1a1a3a" metalness="0.9" roughness="0.2"></a-box>
-            <!-- VISOR HOLOGRÁFICO (pantalla facial) -->
-            <a-box position="0 2.16 0.3" width="0.5" height="0.3" depth="0.06" color="#000011" metalness="0.95"></a-box>
-            <a-box position="0 2.16 0.33" width="0.46" height="0.26" depth="0.03" color="#000033" emissive="#0088ff" emissive-intensity="0.9">
-                <a-animation attribute="material.emissive" dur="1500" direction="alternate" repeat="indefinite" from="#0088ff" to="#00ffcc"></a-animation>
-            </a-box>
-            <!-- Líneas de escaneo en el visor -->
-            <a-box position="0 2.22 0.345" width="0.4" height="0.025" depth="0.01" color="#00FFFF" emissive="#00FFFF" emissive-intensity="1">
-                <a-animation attribute="position" dur="1200" direction="alternate" repeat="indefinite" from="0 2.22 0.345" to="0 2.08 0.345"></a-animation>
-            </a-box>
-            <!-- Auricular/antena cabeza -->
-            <a-cylinder position="-0.34 2.52 0" radius="0.04" height="0.4" color="#333355" metalness="0.9" rotation="0 0 15"></a-cylinder>
-            <a-sphere position="-0.4 2.72 0" radius="0.06" color="#CC00FF" emissive="#8800AA">
-                <a-animation attribute="material.emissive-intensity" dur="900" direction="alternate" repeat="indefinite" from="0.8" to="0.1"></a-animation>
-            </a-sphere>
-            <a-cylinder position="0.34 2.52 0" radius="0.04" height="0.4" color="#333355" metalness="0.9" rotation="0 0 -15"></a-cylinder>
-            <a-sphere position="0.4 2.72 0" radius="0.06" color="#00CCFF" emissive="#0088AA">
-                <a-animation attribute="material.emissive-intensity" dur="1100" direction="alternate" repeat="indefinite" from="0.8" to="0.1"></a-animation>
-            </a-sphere>
-
-            <!-- == HALO / AURA ORBITAL ALREDEDOR DEL CUERPO == -->
-            <a-torus position="0 1.2 0" radius="1.35" radius-tubular="0.028" color="#9900FF" emissive="#6600AA" emissive-intensity="0.6" rotation="0 0 0">
-                <a-animation attribute="rotation" dur="6000" repeat="indefinite" to="0 360 0"></a-animation>
-            </a-torus>
-            <a-torus position="0 1.2 0" radius="1.1" radius-tubular="0.02" color="#00FFFF" emissive="#0088AA" emissive-intensity="0.5" rotation="80 20 0">
-                <a-animation attribute="rotation" dur="4500" repeat="indefinite" to="360 0 0"></a-animation>
-            </a-torus>
-            <!-- Partículas de energía -->
-            <a-sphere radius="0.055" color="#FF00FF" emissive="#FF00FF" emissive-intensity="1" position="1.35 1.2 0">
-                <a-animation attribute="position" dur="6000" repeat="indefinite"
-                    from="1.35 1.2 0" to="0 1.2 1.35" direction="normal"></a-animation>
-            </a-sphere>
-            <a-sphere radius="0.045" color="#00FFFF" emissive="#00FFFF" emissive-intensity="1" position="-1.35 1.2 0">
-                <a-animation attribute="position" dur="4500" repeat="indefinite"
-                    from="-1.35 1.2 0" to="0 1.2 -1.35" direction="normal"></a-animation>
-            </a-sphere>
-
-            <!-- == ETIQUETAS == -->
-            <a-text value="FUTURO DE LA IA · 2026–2050+" position="0 3.2 0" align="center" width="8" color="#E040FB"></a-text>
-            <a-text value="AGI · ASI · Robot · Singularidad" position="0 -0.85 0" align="center" width="7" scale="0.55 0.55 0.55" color="#CE93D8"></a-text>
-        </a-entity>
-
-        <a-animation attribute="position" dur="3500" direction="alternate" repeat="indefinite" from="0 0.1 -2.5" to="0 0.28 -2.5"></a-animation>
-        <a-animation attribute="rotation" dur="24000" repeat="indefinite" to="0 360 0"></a-animation>
-    </a-entity>
-
-</a-scene>
-
+<!-- Three.js r160 -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
 <script>
-// ── Era desde URL ──────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════
+//  ERA DESDE URL
+// ═══════════════════════════════════════════════════
 const p = new URLSearchParams(location.search);
 let era = p.get('era') || 'present';
-if (era === 'pasado')   era = 'past';
-if (era === 'presente') era = 'present';
-if (era === 'futuro')   era = 'future';
-if (!['past','present','future'].includes(era)) era = 'present';
+if(era==='pasado')   era='past';
+if(era==='presente') era='present';
+if(era==='futuro')   era='future';
+if(!['past','present','future'].includes(era)) era='present';
 
 const ERAS = {
-    past: {
-        icon:'🕰️',
-        title:'🕰️ PASADO DE LA IA (1950–2011)',
-        sub:'Test de Turing · ELIZA · Deep Blue · Watson',
-        chipClass:'chip-past', chipTxt:'🕰️ PASADO IA',
-        obj:'obj-pasado',
-        desc:'Escena: el experimento del <strong style="color:#fff">Test de Turing</strong>.<br>Mueve el dispositivo para explorar.'
-    },
-    present: {
-        icon:'⚡',
-        title:'⚡ PRESENTE DE LA IA (2012–2025)',
-        sub:'AlexNet · AlphaGo · Transformers · ChatGPT · GPT-4o',
-        chipClass:'chip-present', chipTxt:'⚡ PRESENTE IA',
-        obj:'obj-presente',
-        desc:'Modelo: <strong style="color:#fff">Red Neuronal</strong> — estructura de átomo con nodos y órbitas.<br>Mueve el dispositivo para explorar.'
-    },
-    future: {
-        icon:'🚀',
-        title:'🚀 FUTURO DE LA IA (2026–2050+)',
-        sub:'AGI · ASI · Singularidad · Superinteligencia',
-        chipClass:'chip-future', chipTxt:'🚀 FUTURO IA',
-        obj:'obj-futuro',
-        desc:'Modelo: <strong style="color:#fff">Robot Humanoide AGI</strong> con aura de energía orbital.<br>Mueve el dispositivo para explorar.'
-    }
+  past: {
+    icon:'🕰️',
+    title:'🕰️ PASADO DE LA IA (1950–2011)',
+    sub:'Test de Turing · ELIZA · Deep Blue · Watson',
+    chipClass:'chip-past', chipTxt:'🕰️ PASADO IA',
+    desc:'Modelo: <strong style="color:#fff">Doble Hélice de ADN</strong> — el origen de la computación e inteligencia biológica.<br><br><strong style="color:#fff">Arrastra</strong> para rotar el modelo.'
+  },
+  present: {
+    icon:'⚡',
+    title:'⚡ PRESENTE DE LA IA (2012–2025)',
+    sub:'AlexNet · AlphaGo · Transformers · ChatGPT · GPT-4o',
+    chipClass:'chip-present', chipTxt:'⚡ PRESENTE IA',
+    desc:'Modelo: <strong style="color:#fff">Red Neuronal holográfica</strong> — nodos, sinapsis y pulsos de datos en tiempo real.<br><br><strong style="color:#fff">Arrastra</strong> para rotar el modelo.'
+  },
+  future: {
+    icon:'🚀',
+    title:'🚀 FUTURO DE LA IA (2026–2050+)',
+    sub:'AGI · ASI · Singularidad · Superinteligencia',
+    chipClass:'chip-future', chipTxt:'🚀 FUTURO IA',
+    desc:'Modelo: <strong style="color:#fff">Humanoide de partículas</strong> — ser de energía pura, la forma de la AGI.<br><br><strong style="color:#fff">Arrastra</strong> para rotar el modelo.'
+  }
 };
-
 const cfg = ERAS[era];
 
 // Poblar overlay
 document.getElementById('ov-icon').textContent  = cfg.icon;
 document.getElementById('ov-title').textContent = cfg.title;
 const chip = document.getElementById('ov-chip');
-chip.className = 'era-chip ' + cfg.chipClass;
+chip.className = 'era-chip '+cfg.chipClass;
 chip.textContent = cfg.chipTxt;
 document.getElementById('ov-desc').innerHTML = cfg.desc;
 
 // Aviso HTTPS
-if (location.protocol !== 'https:' && !['localhost','127.0.0.1'].includes(location.hostname)) {
-    const w = document.getElementById('https-warn');
-    w.style.display = 'block';
-    setTimeout(() => { w.style.opacity='0'; setTimeout(()=>w.remove(),1200); }, 7000);
+if(location.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(location.hostname)){
+  const w=document.getElementById('https-warn');
+  w.style.display='block';
+  setTimeout(()=>{w.style.opacity='0';setTimeout(()=>w.remove(),1200);},7000);
 }
 
-// ── INICIO DE AR ───────────────────────────────────────────────────────────
-document.getElementById('btn-start').addEventListener('click', async () => {
-    const btn = document.getElementById('btn-start');
-    btn.disabled = true;
-    btn.textContent = '⏳ Activando cámara…';
+// ═══════════════════════════════════════════════════
+//  THREE.JS — SETUP PRINCIPAL
+// ═══════════════════════════════════════════════════
+let renderer, scene, camera, clock, animId;
+let currentModel = null;
 
-    try {
-        // Solicitar cámara trasera (ideal para móvil)
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: { ideal: 'environment' },
-                width:  { ideal: 1280 },
-                height: { ideal: 720 }
-            },
-            audio: false
-        });
+function initThree(canvas){
+  clock = new THREE.Clock();
 
-        // ── Inyectar video como fondo real ──
-        const vid = document.getElementById('cam-video');
-        vid.srcObject = stream;
-        // Si es cámara trasera NO espejamos
-        const track = stream.getVideoTracks()[0];
-        const settings = track.getSettings();
-        if (settings.facingMode === 'user') {
-            vid.style.transform = 'scaleX(-1)'; // espejo sólo para cámara frontal
-        } else {
-            vid.style.transform = 'none';
-        }
-        vid.style.display = 'block';
-        await new Promise(r => { vid.onloadedmetadata = () => { vid.play(); r(); }; });
+  renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true, premultipliedAlpha:false});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 0);
 
-        // ── Configurar A-Frame con alpha transparente ──
-        const scene = document.getElementById('arScene');
-        scene.style.display = 'block';
+  scene  = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.01, 100);
+  camera.position.set(0, 0, 4);
 
-        // Esperar a que la escena esté lista y forzar fondo transparente
-        scene.addEventListener('loaded', () => forceTransparent(scene), { once: true });
-        if (scene.hasLoaded) forceTransparent(scene);
+  // Luces
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+  dir.position.set(3,5,4); scene.add(dir);
+  const pt1 = new THREE.PointLight(0x00aaff, 1.2, 14);
+  pt1.position.set(-2,2,2); scene.add(pt1);
+  const pt2 = new THREE.PointLight(0xff6600, 0.9, 12);
+  pt2.position.set(2,-1,2); scene.add(pt2);
+  const pt3 = new THREE.PointLight(0xaa00ff, 0.6, 10);
+  pt3.position.set(0,3,-1); scene.add(pt3);
 
-        // ── Activar objeto 3D correcto ──
-        ['obj-pasado','obj-presente','obj-futuro'].forEach(id =>
-            document.getElementById(id).setAttribute('visible','false'));
-        document.getElementById(cfg.obj).setAttribute('visible','true');
+  window.addEventListener('resize',()=>{
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
 
-        // ── Actualizar UI ──
-        document.getElementById('overlay').classList.add('fade-out');
-        document.getElementById('era-label').innerHTML =
-            cfg.title + '<span>' + cfg.sub + '</span>';
-        document.getElementById('cam-dot').classList.add('on');
-        document.getElementById('cam-txt').textContent = 'Cámara activa';
+  setupDrag();
 
-        // Hint
-        setTimeout(() => {
-            const h = document.getElementById('ar-hint');
-            h.classList.add('show');
-            setTimeout(() => h.classList.remove('show'), 4000);
-        }, 1500);
+  if(era==='past')    currentModel = buildDNA();
+  if(era==='present') currentModel = buildNeuralNet();
+  if(era==='future')  currentModel = buildParticleHuman();
+  scene.add(currentModel.group);
 
-        // Cleanup
-        window.addEventListener('pagehide', () => stream.getTracks().forEach(t => t.stop()));
+  animate();
+}
 
-    } catch (err) {
-        console.error('Error cámara:', err);
-        document.getElementById('overlay').classList.add('fade-out');
-        document.getElementById('perm-error').classList.add('visible');
+// ─── DRAG / GYRO ROTATION ─────────────────────────
+let isDragging=false, prevX=0, prevY=0, rotY=0, rotX=0;
+function setupDrag(){
+  const el=document.getElementById('threeCanvas');
+  el.addEventListener('mousedown', e=>{isDragging=true;prevX=e.clientX;prevY=e.clientY;});
+  el.addEventListener('mouseup',   ()=>isDragging=false);
+  el.addEventListener('mousemove', e=>{
+    if(!isDragging) return;
+    rotY+=(e.clientX-prevX)*0.008; rotX+=(e.clientY-prevY)*0.008;
+    prevX=e.clientX; prevY=e.clientY;
+  });
+  el.addEventListener('touchstart', e=>{isDragging=true;prevX=e.touches[0].clientX;prevY=e.touches[0].clientY;},{passive:true});
+  el.addEventListener('touchend',   ()=>isDragging=false);
+  el.addEventListener('touchmove',  e=>{
+    if(!isDragging) return;
+    rotY+=(e.touches[0].clientX-prevX)*0.01; rotX+=(e.touches[0].clientY-prevY)*0.01;
+    prevX=e.touches[0].clientX; prevY=e.touches[0].clientY;
+  },{passive:true});
+}
+
+function animate(){
+  animId=requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  if(currentModel){
+    if(!isDragging){
+      currentModel.group.rotation.y=t*0.3;
+    } else {
+      currentModel.group.rotation.y=rotY;
+      currentModel.group.rotation.x=rotX;
     }
-});
-
-// Forzar fondo completamente transparente en el canvas WebGL
-function forceTransparent(scene) {
-    try {
-        const renderer = scene.renderer;
-        if (renderer) {
-            renderer.setClearColor(0x000000, 0);
-            renderer.setPixelRatio(window.devicePixelRatio);
-        }
-        const canvas = scene.canvas;
-        if (canvas) {
-            canvas.style.background = 'transparent';
-            canvas.style.position   = 'absolute';
-            canvas.style.top = '0'; canvas.style.left = '0';
-        }
-    } catch(e) { console.warn('forceTransparent:', e); }
+    if(currentModel.update) currentModel.update(t);
+  }
+  renderer.render(scene,camera);
 }
-</script>
 
+// ═══════════════════════════════════════════════════
+//  HELPER: Sprite de texto 3D
+// ═══════════════════════════════════════════════════
+function addLabel(group, text, x, y, z, scale, color){
+  const c=document.createElement('canvas');
+  c.width=512; c.height=72;
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,512,72);
+  ctx.fillStyle=color||'#ffffff';
+  ctx.font='bold 28px Inter, system-ui, sans-serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText(text,256,36);
+  const tex=new THREE.CanvasTexture(c);
+  const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});
+  const s=new THREE.Sprite(mat);
+  s.position.set(x,y,z);
+  s.scale.set((512/72)*scale, scale, 1);
+  group.add(s);
+}
+
+// ═══════════════════════════════════════════════════
+//  MODELO 1 — DOBLE HÉLICE DE ADN  (PASADO)
+//  Colores VIOS: naranja #FF6600 + cyan #00FFFF
+// ═══════════════════════════════════════════════════
+function buildDNA(){
+  const group=new THREE.Group();
+
+  const STEPS=40, RADIUS=0.72, HEIGHT=4.2, TURNS=3.2;
+
+  // Materiales cadenas — naranja y cyan (paleta VIOS)
+  const matA=new THREE.MeshStandardMaterial({color:0xFF6600,emissive:0x331100,emissiveIntensity:0.4,metalness:0.5,roughness:0.35});
+  const matB=new THREE.MeshStandardMaterial({color:0x00CCFF,emissive:0x003344,emissiveIntensity:0.4,metalness:0.5,roughness:0.35});
+
+  // Bases nitrogenadas: 4 colores (adenina, timina, guanina, citosina)
+  const BASE_COLORS=[0xff4488,0x44ffaa,0xffcc00,0xcc44ff];
+  const baseMats=BASE_COLORS.map(c=>new THREE.MeshStandardMaterial({
+    color:c, emissive:c, emissiveIntensity:0.5, metalness:0.3, roughness:0.3
+  }));
+
+  const nodeGeo=new THREE.SphereGeometry(0.1,14,10);
+  const baseGeo=new THREE.SphereGeometry(0.07,10,8);
+
+  const posA=[], posB=[];
+
+  for(let i=0;i<STEPS;i++){
+    const frac=i/(STEPS-1);
+    const angle=frac*Math.PI*2*TURNS;
+    const y=frac*HEIGHT-HEIGHT/2;
+
+    const ax=Math.cos(angle)*RADIUS,  az=Math.sin(angle)*RADIUS;
+    const bx=Math.cos(angle+Math.PI)*RADIUS, bz=Math.sin(angle+Math.PI)*RADIUS;
+
+    posA.push(new THREE.Vector3(ax,y,az));
+    posB.push(new THREE.Vector3(bx,y,bz));
+
+    const sA=new THREE.Mesh(nodeGeo,matA); sA.position.set(ax,y,az); group.add(sA);
+    const sB=new THREE.Mesh(nodeGeo,matB); sB.position.set(bx,y,bz); group.add(sB);
+
+    if(i%2===0){
+      const mx=(ax+bx)/2, mz=(az+bz)/2;
+      const dx=bx-ax, dz=bz-az;
+      const len=Math.sqrt(dx*dx+dz*dz);
+      const rMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x334466,emissiveIntensity:0.2,transparent:true,opacity:0.82});
+      const rung=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,len,8),rMat);
+      rung.position.set(mx,y,mz);
+      rung.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(dx,0,dz).normalize());
+      group.add(rung);
+      const base=new THREE.Mesh(baseGeo,baseMats[i%4]);
+      base.position.set(mx,y,mz); group.add(base);
+    }
+  }
+
+  // Tubos spline
+  const tubeA=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(posA),STEPS*5,0.038,10,false);
+  const tubeB=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(posB),STEPS*5,0.038,10,false);
+  group.add(new THREE.Mesh(tubeA,matA));
+  group.add(new THREE.Mesh(tubeB,matB));
+
+  // Partículas alrededor
+  const pCount=150;
+  const pGeo=new THREE.BufferGeometry();
+  const pPos=new Float32Array(pCount*3);
+  for(let i=0;i<pCount;i++){
+    const a=Math.random()*Math.PI*2;
+    const r=RADIUS+0.35+Math.random()*0.55;
+    pPos[i*3]=Math.cos(a)*r;
+    pPos[i*3+1]=(Math.random()-0.5)*HEIGHT;
+    pPos[i*3+2]=Math.sin(a)*r;
+  }
+  pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+  group.add(new THREE.Points(pGeo,new THREE.PointsMaterial({color:0xffffff,size:0.04,transparent:true,opacity:0.55,sizeAttenuation:true})));
+
+  // Labels
+  addLabel(group,'PASADO DE LA IA', 0, 2.65, 0, 0.30,'#D2B48C');
+  addLabel(group,'1950 — 2011',      0, 2.28, 0, 0.20,'#FF8800');
+  addLabel(group,'Turing · ELIZA · Deep Blue · Watson', 0,-2.65,0,0.15,'#888888');
+
+  group.position.y=-0.3;
+
+  const update=(t)=>{
+    matA.emissiveIntensity=0.3+Math.sin(t*2)*0.18;
+    matB.emissiveIntensity=0.3+Math.sin(t*2+1)*0.18;
+    baseMats.forEach((m,i)=>{m.emissiveIntensity=0.35+Math.sin(t*2.5+i)*0.22;});
+    group.position.y=-0.3+Math.sin(t*0.75)*0.13;
+  };
+  return {group,update};
+}
+
+// ═══════════════════════════════════════════════════
+//  MODELO 2 — RED NEURONAL HOLOGRÁFICA  (PRESENTE)
+//  Colores VIOS: naranja para nodos clave + cyan para conexiones
+// ═══════════════════════════════════════════════════
+function buildNeuralNet(){
+  const group=new THREE.Group();
+
+  // Capas: input → hidden1 → hidden2 → output
+  const LAYERS=[
+    {n:6, z:-1.5, color:0x00FFCC, emissive:0x004433},
+    {n:9, z:-0.5, color:0xFF6600, emissive:0x331100},
+    {n:7, z: 0.5, color:0x8844ff, emissive:0x221144},
+    {n:4, z: 1.5, color:0x00CCFF, emissive:0x003344}
+  ];
+
+  const nodeGeo=new THREE.SphereGeometry(0.1,14,10);
+  const nodePositions=[];
+  const nodeMeshes=[];
+
+  LAYERS.forEach((layer)=>{
+    const mat=new THREE.MeshStandardMaterial({
+      color:layer.color, emissive:layer.emissive,
+      emissiveIntensity:0.55, metalness:0.55, roughness:0.3,
+      transparent:true, opacity:0.92
+    });
+    const posArr=[];
+    for(let ni=0;ni<layer.n;ni++){
+      const angle=(ni/layer.n)*Math.PI*2;
+      const r=layer.n>6?0.95:0.68;
+      const x=Math.cos(angle)*r, y=Math.sin(angle)*r;
+      const mesh=new THREE.Mesh(nodeGeo,mat.clone());
+      mesh.position.set(x,y,layer.z); group.add(mesh);
+      posArr.push(mesh.position.clone());
+      nodeMeshes.push({mesh,phase:Math.random()*Math.PI*2});
+    }
+    nodePositions.push(posArr);
+  });
+
+  // Conexiones entre capas (líneas)
+  const lineMat=new THREE.LineBasicMaterial({color:0x00aacc,transparent:true,opacity:0.22});
+  const connections=[];
+  for(let li=0;li<LAYERS.length-1;li++){
+    nodePositions[li].forEach(fp=>{
+      nodePositions[li+1].forEach(tp=>{
+        const geo=new THREE.BufferGeometry().setFromPoints([fp.clone(),tp.clone()]);
+        const mesh=new THREE.Line(geo,lineMat.clone()); group.add(mesh);
+        connections.push({from:fp.clone(),to:tp.clone(),mesh});
+      });
+    });
+  }
+
+  // Pulsos de señal (esferas viajando por cada conexión)
+  const pulseGeo=new THREE.SphereGeometry(0.048,8,6);
+  const pulses=connections.map(c=>({
+    conn:c,
+    mesh:new THREE.Mesh(pulseGeo,new THREE.MeshBasicMaterial({color:0xFF6600,transparent:true,opacity:0.9})),
+    speed:0.38+Math.random()*0.55,
+    t:Math.random()
+  }));
+  pulses.forEach(pu=>group.add(pu.mesh));
+
+  // Núcleo central
+  const coreMat=new THREE.MeshStandardMaterial({
+    color:0xffffff,emissive:0xFF5500,emissiveIntensity:1.0,
+    metalness:0.9,roughness:0.1,transparent:true,opacity:0.88
+  });
+  const core=new THREE.Mesh(new THREE.SphereGeometry(0.22,22,16),coreMat);
+  group.add(core);
+
+  // Wireframe esfera exterior
+  group.add(new THREE.Mesh(
+    new THREE.SphereGeometry(1.6,18,12),
+    new THREE.MeshBasicMaterial({color:0xFF6600,wireframe:true,transparent:true,opacity:0.08})
+  ));
+
+  // Segundo wireframe (cyan)
+  group.add(new THREE.Mesh(
+    new THREE.SphereGeometry(1.85,14,10),
+    new THREE.MeshBasicMaterial({color:0x00CCFF,wireframe:true,transparent:true,opacity:0.06})
+  ));
+
+  // Partículas orbitales
+  const pCount=220;
+  const pGeo=new THREE.BufferGeometry();
+  const pPos=new Float32Array(pCount*3);
+  for(let i=0;i<pCount;i++){
+    const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+    const r=1.7+Math.random()*0.45;
+    pPos[i*3]=r*Math.sin(ph)*Math.cos(th);
+    pPos[i*3+1]=r*Math.sin(ph)*Math.sin(th);
+    pPos[i*3+2]=r*Math.cos(ph);
+  }
+  pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+  group.add(new THREE.Points(pGeo,new THREE.PointsMaterial({color:0x00FFFF,size:0.032,transparent:true,opacity:0.65,sizeAttenuation:true})));
+
+  addLabel(group,'PRESENTE DE LA IA', 0, 2.35, 0, 0.30,'#FFAA44');
+  addLabel(group,'2012 — 2025',        0, 2.00, 0, 0.20,'#00CCFF');
+  addLabel(group,'AlexNet · Transformers · ChatGPT · GPT-4o',0,-2.35,0,0.14,'#FFD966');
+
+  const update=(t)=>{
+    nodeMeshes.forEach(n=>{
+      n.mesh.material.emissiveIntensity=0.4+Math.sin(t*2+n.phase)*0.38;
+      n.mesh.scale.setScalar(1+Math.sin(t*3+n.phase)*0.07);
+    });
+    pulses.forEach(pu=>{
+      pu.t=(pu.t+pu.speed*0.016)%1;
+      pu.mesh.position.lerpVectors(pu.conn.from,pu.conn.to,pu.t);
+      pu.mesh.material.opacity=Math.sin(pu.t*Math.PI)*0.95;
+    });
+    coreMat.emissiveIntensity=0.7+Math.sin(t*2.8)*0.32;
+    core.scale.setScalar(1+Math.sin(t*2.2)*0.06);
+    group.position.y=Math.sin(t*0.7)*0.1;
+  };
+  return {group,update};
+}
+
+// ═══════════════════════════════════════════════════
+//  MODELO 3 — HUMANOIDE DE PARTÍCULAS  (FUTURO)
+//  Degradado cyan→naranja→violeta (colores VIOS extendidos)
+// ═══════════════════════════════════════════════════
+function buildParticleHuman(){
+  const group=new THREE.Group();
+
+  function humanoidPoints(count){
+    const pts=[];
+    for(let i=0;i<count;i++){
+      let x,y,z; const r=Math.random();
+      if(r<0.08){
+        const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
+        const rad=0.30+Math.random()*0.06;
+        x=rad*Math.sin(ph)*Math.cos(th); y=1.60+rad*Math.cos(ph); z=rad*Math.sin(ph)*Math.sin(th)*0.88;
+      } else if(r<0.32){
+        x=(Math.random()-0.5)*0.70; y=0.55+Math.random()*0.92; z=(Math.random()-0.5)*0.44;
+        const d=Math.sqrt(x*x+z*z); if(d>0.36){x*=0.36/d;z*=0.36/d;}
+      } else if(r<0.50){
+        x=(Math.random()-0.5)*0.60; y=0.28+Math.random()*0.30; z=(Math.random()-0.5)*0.36;
+      } else if(r<0.68){
+        const leg=Math.random()<0.5?-0.19:0.19;
+        x=leg+(Math.random()-0.5)*0.20; y=(Math.random()*1.08)-0.88; z=(Math.random()-0.5)*0.20;
+      } else if(r<0.82){
+        const arm=Math.random()<0.5?-0.68:0.68;
+        const ty=0.55+Math.random()*0.82;
+        x=arm+(Math.random()-0.5)*0.18; y=ty-(Math.abs(arm)-0.38)*0.55; z=(Math.random()-0.5)*0.18;
+      } else {
+        x=(Math.random()-0.5)*0.17; y=1.20+Math.random()*0.33; z=(Math.random()-0.5)*0.17;
+      }
+      pts.push(x,y,z);
+    }
+    return pts;
+  }
+
+  const COUNT=4000;
+  const basePos=new Float32Array(humanoidPoints(COUNT));
+  const currPos=new Float32Array(basePos);
+  const phases=new Float32Array(COUNT).map(()=>Math.random()*Math.PI*2);
+
+  const pGeo=new THREE.BufferGeometry();
+  const posAttr=new THREE.BufferAttribute(currPos,3);
+  pGeo.setAttribute('position',posAttr);
+
+  // Colores: cyan en pies → naranja VIOS en torso → violeta en cabeza
+  const colors=new Float32Array(COUNT*3);
+  for(let i=0;i<COUNT;i++){
+    const yv=basePos[i*3+1];
+    const tn=Math.max(0,Math.min(1,(yv+1.1)/2.9));
+    if(tn<0.45){
+      // Cyan → naranja
+      const f=tn/0.45;
+      colors[i*3]  =0.0+f*1.0;   // R: 0→1
+      colors[i*3+1]=0.9-f*0.5;   // G: 0.9→0.4
+      colors[i*3+2]=1.0-f*1.0;   // B: 1→0
+    } else {
+      // Naranja → violeta
+      const f=(tn-0.45)/0.55;
+      colors[i*3]  =1.0-f*0.5;   // R: 1→0.5
+      colors[i*3+1]=0.4-f*0.4;   // G: 0.4→0
+      colors[i*3+2]=0.0+f*1.0;   // B: 0→1
+    }
+  }
+  pGeo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+
+  const pMat=new THREE.PointsMaterial({size:0.026,vertexColors:true,transparent:true,opacity:0.9,sizeAttenuation:true});
+  group.add(new THREE.Points(pGeo,pMat));
+
+  // Núcleo (pecho) — naranja VIOS
+  const coreMat=new THREE.MeshStandardMaterial({
+    color:0xffffff,emissive:0xFF6600,emissiveIntensity:1.2,
+    metalness:1.0,roughness:0.0,transparent:true,opacity:0.9
+  });
+  const core=new THREE.Mesh(new THREE.SphereGeometry(0.17,20,14),coreMat);
+  core.position.set(0,1.0,0); group.add(core);
+  const inner=new THREE.Mesh(new THREE.SphereGeometry(0.08,14,10),new THREE.MeshBasicMaterial({color:0xffffff}));
+  inner.position.set(0,1.0,0); group.add(inner);
+
+  // Anillos orbitales — naranja / cyan (VIOS)
+  function addRing(radius,tube,color,rx,ry,rz){
+    const m=new THREE.Mesh(
+      new THREE.TorusGeometry(radius,tube,12,72),
+      new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:0.55,metalness:0.7,roughness:0.2,transparent:true,opacity:0.82})
+    );
+    m.rotation.set(rx,ry,rz); m.position.y=0.55; group.add(m); return m;
+  }
+  const ring1=addRing(1.30,0.026,0xFF6600, 0.2,0,0);
+  const ring2=addRing(1.10,0.018,0x00CCFF, Math.PI/2,0.3,0);
+  const ring3=addRing(0.92,0.014,0xcc44ff, 0.5,0,Math.PI/4);
+
+  // Aura de partículas externas
+  const aCount=320;
+  const aGeo=new THREE.BufferGeometry();
+  const aPos=new Float32Array(aCount*3);
+  const aPhase=new Float32Array(aCount);
+  for(let i=0;i<aCount;i++){
+    const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+    const r=1.5+Math.random()*0.65;
+    aPos[i*3]=r*Math.sin(ph)*Math.cos(th);
+    aPos[i*3+1]=r*Math.sin(ph)*Math.sin(th)*1.45+0.42;
+    aPos[i*3+2]=r*Math.cos(ph);
+    aPhase[i]=Math.random()*Math.PI*2;
+  }
+  aGeo.setAttribute('position',new THREE.BufferAttribute(aPos,3));
+  const auraParticles=new THREE.Points(aGeo,new THREE.PointsMaterial({color:0xFF6600,size:0.038,transparent:true,opacity:0.55,sizeAttenuation:true}));
+  group.add(auraParticles);
+
+  addLabel(group,'FUTURO DE LA IA', 0, 2.68, 0, 0.30,'#E040FB');
+  addLabel(group,'2026 — 2050+',     0, 2.32, 0, 0.20,'#80CBC4');
+  addLabel(group,'AGI · ASI · Singularidad · Superinteligencia',0,-1.65,0,0.14,'#CE93D8');
+
+  const posArr=pGeo.attributes.position;
+  const auraArr=aGeo.attributes.position;
+
+  const update=(t)=>{
+    // Vibración orgánica de las partículas
+    for(let i=0;i<COUNT;i++){
+      const bx=basePos[i*3],by=basePos[i*3+1],bz=basePos[i*3+2];
+      const ph=phases[i];
+      const amp=0.028+Math.abs(by)*0.010;
+      posArr.array[i*3]  =bx+Math.sin(t*2.2+ph)*amp;
+      posArr.array[i*3+1]=by+Math.sin(t*1.8+ph+1)*amp*0.65;
+      posArr.array[i*3+2]=bz+Math.cos(t*2.5+ph+2)*amp;
+    }
+    posArr.needsUpdate=true;
+
+    // Aura orbital
+    for(let i=0;i<aCount;i++){
+      const th=t*0.28+aPhase[i], ph=aPhase[i]*Math.PI;
+      const r=1.55+Math.sin(t+aPhase[i])*0.1;
+      auraArr.array[i*3]  =r*Math.sin(ph)*Math.cos(th);
+      auraArr.array[i*3+1]=r*Math.sin(ph)*Math.sin(th)*1.45+0.42;
+      auraArr.array[i*3+2]=r*Math.cos(ph);
+    }
+    auraArr.needsUpdate=true;
+
+    ring1.rotation.y=t*0.75;
+    ring2.rotation.z=t*1.05;
+    ring3.rotation.x=t*0.58;
+
+    const ps=1+Math.sin(t*3.2)*0.13;
+    core.scale.setScalar(ps); inner.scale.setScalar(ps*1.12);
+    coreMat.emissiveIntensity=0.9+Math.sin(t*3.2)*0.38;
+
+    group.position.y=Math.sin(t*0.68)*0.13;
+  };
+  return {group,update};
+}
+
+// ═══════════════════════════════════════════════════
+//  INICIO — BOTÓN ACTIVAR CÁMARA
+// ═══════════════════════════════════════════════════
+document.getElementById('btn-start').addEventListener('click', async ()=>{
+  const btn=document.getElementById('btn-start');
+  btn.disabled=true; btn.textContent='⏳ Activando cámara…';
+
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},
+      audio:false
+    });
+
+    // Video como fondo real
+    const vid=document.getElementById('cam-video');
+    vid.srcObject=stream;
+    const settings=stream.getVideoTracks()[0].getSettings();
+    vid.style.transform=(settings.facingMode==='user')?'scaleX(-1)':'none';
+    vid.style.display='block';
+    await new Promise(r=>{vid.onloadedmetadata=()=>{vid.play();r();};});
+
+    // Iniciar Three.js sobre el video
+    const canvas=document.getElementById('threeCanvas');
+    canvas.style.display='block';
+    initThree(canvas);
+
+    // Actualizar UI
+    document.getElementById('overlay').classList.add('fade-out');
+    document.getElementById('era-label').innerHTML=cfg.title+'<span>'+cfg.sub+'</span>';
+    document.getElementById('cam-dot').classList.add('on');
+    document.getElementById('cam-txt').textContent='Cámara activa';
+
+    // Hint rotación
+    setTimeout(()=>{
+      const h=document.getElementById('ar-hint');
+      h.classList.add('show');
+      setTimeout(()=>h.classList.remove('show'),4500);
+    },1800);
+
+    window.addEventListener('pagehide',()=>stream.getTracks().forEach(t=>t.stop()));
+
+  } catch(e){
+    console.error(e);
+    document.getElementById('overlay').classList.add('fade-out');
+    document.getElementById('perm-error').classList.add('visible');
+  }
+});
+</script>
 </body>
 </html>
+
